@@ -1,0 +1,38 @@
+<!-- pages/evaluation/evaluation.wxml -->
+<view class="container" style="background-color: white;">
+  <!-- 评价要素标签 - 双向绑定 -->
+  <scroll-view class="tabs-scroll" scroll-x>
+    <view class="tabs" style="width: 100%;">
+      <view wx:for="{{tabs}}" wx:key="id" 
+          class="tab {{currentTab === index ? 'active' : ''}}"
+          bindtap="switchTab" data-index="{{index}}">
+        <text class="tab-text">{{item.name}}</text>
+      </view>
+    </view>
+  </scroll-view>
+  
+
+  <!-- 评价内容区域 - 双向绑定 -->
+  <scroll-view class="content" scroll-y style="margin-bottom:210rpx;">
+    <view wx:for="{{currentContents}}" wx:key="id" class="evaluation-item">
+      <text class="item-title">{{item.title}}</text>
+      <text class="item-desc">{{item.description}}</text>
+      <view class="scoring-area">
+        <text class="score-label">完成次数：</text>
+        <view class="score-controls">
+          <button class="score-btn minus" bindtap="decreaseScore" data-id="{{item.id}}">-</button>
+          <input class="score-input" type="number" value="{{item.time}}" 
+                 bindinput="onScoreInput" data-id="{{item.id}}" placeholder="0"/>
+          <button class="score-btn plus" bindtap="increaseScore" data-id="{{item.id}}">+</button>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部按钮 -->
+  <view class="footer">
+      <button class="btn submit-btn" bindtap="submitEvaluation">提交评价</button>
+      <button class="btn audit-btn" bindtap="submitAudit">提交审核</button>
+      <button class="btn back-btn" bindtap="navigateBack">返回</button>
+    </view>
+</view>

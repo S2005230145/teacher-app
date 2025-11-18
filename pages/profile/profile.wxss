@@ -1,0 +1,212 @@
+/* pages/profile/profile.wxss */
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0;
+}
+
+/* 用户信息头部 */
+.user-header {
+  background: rgba(255, 255, 255, 0.95);
+  margin: 20rpx;
+  border-radius: 20rpx;
+  padding: 40rpx 30rpx;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4rpx 15rpx rgba(0,0,0,0.1);
+  backdrop-filter: blur(10rpx);
+}
+
+.user-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8B5FBF, #6A4FCF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 30rpx;
+  overflow: hidden;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.avatar-placeholder {
+  font-size: 50rpx;
+  color: white;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.user-department {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.user-score {
+  display: block;
+  font-size: 24rpx;
+  color: #8B5FBF;
+  font-weight: 500;
+}
+
+.user-rank {
+  text-align: center;
+}
+
+.rank-label {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 5rpx;
+}
+
+.rank-number {
+  display: block;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #8B5FBF;
+}
+
+/* 数据概览 */
+.stats-overview {
+  background: rgba(255, 255, 255, 0.95);
+  margin: 0 20rpx 20rpx;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  display: flex;
+  justify-content: space-around;
+  box-shadow: 0 4rpx 15rpx rgba(0,0,0,0.1);
+  backdrop-filter: blur(10rpx);
+}
+
+.stat-item {
+  text-align: center;
+  flex: 1;
+}
+
+.stat-value {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #8B5FBF;
+  margin-bottom: 8rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* 功能菜单 */
+.menu-section {
+  padding: 0 20rpx 120rpx;
+}
+
+.menu-group {
+  margin-bottom: 30rpx;
+}
+
+.menu-title {
+  font-size: 28rpx;
+  color: white;
+  font-weight: 600;
+  margin-bottom: 20rpx;
+  padding-left: 10rpx;
+  text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.3);
+}
+
+.menu-list {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 15rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 15rpx rgba(0,0,0,0.1);
+  backdrop-filter: blur(10rpx);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.menu-item:active {
+  background: rgba(139, 95, 191, 0.05);
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-icon {
+  font-size: 40rpx;
+  margin-right: 25rpx;
+  width: 50rpx;
+  text-align: center;
+}
+
+.menu-text {
+  flex: 1;
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.menu-badge {
+  background: #ff4d4f;
+  color: white;
+  font-size: 20rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
+  margin-right: 15rpx;
+}
+
+.menu-arrow {
+  font-size: 36rpx;
+  color: #ccc;
+  font-weight: bold;
+}
+
+/* 登录/退出按钮 */
+.logout-section,
+.login-section {
+  padding: 0 20rpx 40rpx;
+}
+
+.logout-btn,
+.login-btn {
+  width: 100%;
+  height: 90rpx;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 15rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #8B5FBF;
+  box-shadow: 0 4rpx 15rpx rgba(0,0,0,0.1);
+  backdrop-filter: blur(10rpx);
+}
+
+.logout-btn:active,
+.login-btn:active {
+  background: rgba(255, 255, 255, 0.85);
+}

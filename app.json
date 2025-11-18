@@ -1,0 +1,55 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/main/main",
+    "pages/assessment/assessment",
+    "pages/evaluation/evaluation",
+    "pages/logs/logs",
+    "pages/statistics/statistics",
+    "pages/profile/profile",
+    "pages/ranking/ranking",
+    "pages/kpi/kpi"
+  ],
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#8B5FBF",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "position": "bottom",
+    "list": [
+      {
+        "pagePath": "pages/main/main",
+        "text": "首页",
+        "iconPath": "images/main.png",
+        "selectedIconPath": "images/main_d.png"
+      },
+      {
+        "pagePath": "pages/kpi/kpi",
+        "text": "考核",
+        "iconPath": "images/exam.png",
+        "selectedIconPath": "images/exam_d.png"
+      },
+      {
+        "pagePath": "pages/statistics/statistics",
+        "text": "统计",
+        "iconPath": "images/statics.png",
+        "selectedIconPath": "images/statics_d.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "images/mine.png",
+        "selectedIconPath": "images/mine_d.png"
+      }
+    ]
+  },
+  "window": {
+    "navigationBarTitleText": "教师考核系统",
+    "navigationBarBackgroundColor": "#8B5FBF",
+    "navigationBarTextStyle": "white"
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

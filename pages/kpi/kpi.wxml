@@ -1,0 +1,136 @@
+<!-- pages/kpi/kpi.wxml -->
+<view class="container">
+  <!-- 顶部筛选和搜索 -->
+  <view class="header-section">
+    <view class="search-box" style="width: 90vw;">
+      <view class="search-icon">🔍</view>
+      <input class="search-input" placeholder="搜索考核项目..." bindinput="onSearchInput" />
+      <view class="filter-btn" bindtap="showFilter">筛选 ▼</view>
+    </view>
+    <view class="filter-panel" wx:if="{{showFilterPanel}}">
+      <view class="filter-row">
+        <text class="filter-label">考核类型:</text>
+        <view class="filter-tags">
+          <text class="filter-tag {{currentFilter.type === 'all' ? 'active' : ''}}" 
+                bindtap="setFilter" data-type="type" data-value="all">全部</text>
+          <text class="filter-tag {{currentFilter.type === 'teaching' ? 'active' : ''}}" 
+                bindtap="setFilter" data-type="type" data-value="teaching">教学</text>
+          <text class="filter-tag {{currentFilter.type === 'research' ? 'active' : ''}}" 
+                bindtap="setFilter" data-type="type" data-value="research">科研</text>
+          <text class="filter-tag {{currentFilter.type === 'service' ? 'active' : ''}}" 
+                bindtap="setFilter" data-type="type" data-value="service">服务</text>
+        </view>
+      </view>
+      
+      <view class="filter-row">
+        <text class="filter-label">状态:</text>
+        <view class="filter-tags">
+          <text class="filter-tag {{currentFilter.status === 'all' ? 'active' : ''}}" 
+                bindtap="setFilter" data-type="status" data-value="all">全部</text>
+          <text class="filter-tag {{currentFilter.status === 'active' ? 'active' : ''}}" 
+                bindtap="setFilter" data-type="status" data-value="active">进行中</text>
+          <text class="filter-tag {{currentFilter.status === 'completed' ? 'active' : ''}}" 
+                bindtap="setFilter" data-type="status" data-value="completed">已完成</text>
+          <text class="filter-tag {{currentFilter.status === 'pending' ? 'active' : ''}}" 
+                bindtap="setFilter" data-type="status" data-value="pending">未开始</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- KPI统计概览 -->
+  <view class="stats-overview" style="width: 95vw;">
+    <view class="stat-card">
+      <text class="stat-value">{{totalKpis}}</text>
+      <text class="stat-label">总项目数</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-value">{{completedKpis}}</text>
+      <text class="stat-label">已完成</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-value">{{completionRate}}%</text>
+      <text class="stat-label">完成率</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-value">{{averageScore}}</text>
+      <text class="stat-label">平均分</text>
+    </view>
+  </view>
+
+  <!-- KPI列表 -->
+  <scroll-view class="kpi-list" scroll-y>
+    <view class="kpi-section">
+      <view class="section-header">
+        <text class="section-title">考核项目列表</text>
+        <text class="section-count">共{{filteredKpis.length}}项</text>
+      </view>
+      
+      <view class="kpi-items">
+        <view class="kpi-item" wx:for="{{filteredKpis}}" wx:key="id" bindtap="viewKpiDetail" data-id="{{item.id}}">
+          <view class="item-header">
+            <view class="item-badge {{item.type}}">
+              <text class="badge-text">{{item.typeText}}</text>
+            </view>
+            <view class="item-status {{item.status}}">
+              <text class="status-text">{{item.statusText}}</text>
+            </view>
+          </view>
+          
+          <view class="item-content">
+            <text class="kpi-name">{{item.name}}</text>
+            <text class="kpi-desc">{{item.description}}</text>
+            
+            <view class="kpi-metrics">
+              <view class="metric">
+                <text class="metric-label">权重:</text>
+                <text class="metric-value">{{item.weight}}%</text>
+              </view>
+              <view class="metric">
+                <text class="metric-label">目标值:</text>
+                <text class="metric-value">{{item.targetValue}}</text>
+              </view>
+              <view class="metric">
+                <text class="metric-label">当前值:</text>
+                <text class="metric-value {{item.currentValue >= item.targetValue ? 'achieved' : 'not-achieved'}}">
+                  {{item.currentValue}}
+                </text>
+              </view>
+            </view>
+            
+            <view class="progress-section">
+              <view class="progress-info">
+                <text class="progress-label">完成进度</text>
+                <text class="progress-percent">{{item.progress}}%</text>
+              </view>
+              <view class="progress-bar">
+                <view class="progress-fill" style="width: {{item.progress}}%"></view>
+              </view>
+            </view>
+            
+            <view class="score-section">
+              <text class="score-label">得分:</text>
+              <text class="score-value">{{item.score}}分</text>
+              <text class="score-max">/ {{item.maxScore}}分</text>
+            </view>
+          </view>
+          
+          <view class="item-footer">
+            <text class="deadline">截止: {{item.deadline}}</text>
+            <view class="action-buttons">
+              <button class="btn-detail" bindtap="viewKpiDetail" data-id="{{item.id}}">查看详情</button>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{filteredKpis.length === 0}}">
+      <view class="empty-icon">📊</view>
+      <text class="empty-text">暂无考核项目</text>
+      <text class="empty-desc">请添加或等待分配考核项目</text>
+      <button class="empty-btn" bindtap="addKpi">添加考核项目</button>
+    </view>
+  </scroll-view>
+</view>

@@ -1,0 +1,7 @@
+{
+  "usingComponents": {},
+  "navigationBarTitleText": "教师绩效考核",
+  "navigationBarBackgroundColor": "#8B5FBF",
+  "navigationBarTextStyle": "white",
+  "enablePullDownRefresh": true
+}

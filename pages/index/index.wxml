@@ -1,0 +1,82 @@
+<!--pages/login/login.wxml-->
+<view class="login-container">
+  <!-- 动态背景气泡 -->
+  <view class="bubbles">
+    <view class="bubble bubble-1"></view>
+    <view class="bubble bubble-2"></view>
+    <view class="bubble bubble-3"></view>
+  </view>
+  
+  <!-- 主要内容卡片 -->
+  <view class="glass-card">
+    <!-- 头部区域 -->
+    <view class="header">
+      <view class="logo-wrapper">
+        <view class="logo">👨‍🏫</view>
+        <view class="logo-glow"></view>
+      </view>
+      <text class="app-name">教师绩效考核</text>
+      <text class="app-subtitle">Teacher Performance System</text>
+    </view>
+
+    <!-- 登录表单 -->
+    <view class="form">
+      <!-- 工号输入组 -->
+      <view class="input-group">
+        <view class="input-icon">👤</view>
+        <input 
+          class="input" 
+          type="text" 
+          placeholder="姓名" 
+          placeholder-class="placeholder"
+          model:value="{{username}}"
+          bindfocus="onUsernameFocus"
+          bindblur="onUsernameBlur"
+          bindinput="onInputChange"
+        />
+        <view class="input-line"></view>
+      </view>
+
+      <!-- 密码输入组 -->
+      <view class="input-group">
+        <view class="input-icon">🔒</view>
+        <input 
+          class="input" 
+          password="{{!passwordVisible}}" 
+          placeholder="密码" 
+          placeholder-class="placeholder"
+          model:value="{{password}}"
+          bindfocus="onPasswordFocus"
+          bindblur="onPasswordBlur"
+          bindinput="onInputChange"
+          bindconfirm="onLogin"
+        />
+        <view class="input-line"></view>
+        <!-- 眼睛图标 -->
+        <view class="eye-icon" bindtap="togglePasswordVisibility">
+          <view class="eye-icon-inner">{{passwordVisible ? '👁️' : '🙈'}}</view>
+        </view>
+      </view>
+
+      <!-- 登录按钮 -->
+      <button class="login-btn {{loading ? 'loading' : ''}}" bindtap="onLogin" disabled="{{loading}}">
+        {{loading ? '登录中...' : '登录'}}
+      </button>
+
+      <!-- 错误提示 -->
+      <view class="error-message" wx:if="{{errorMessage}}">
+        <text class="error-text">❌ {{errorMessage}}</text>
+      </view>
+
+      <!-- 底部链接 -->
+      <view class="footer">
+        <text class="footer-link" bindtap="onForgotPassword">忘记密码？</text>
+        <text class="footer-divider">|</text>
+        <text class="footer-link" bindtap="onContactAdmin">联系管理员</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 版本信息 -->
+  <view class="version">v1.0.0 · 教师专业发展平台</view>
+</view>

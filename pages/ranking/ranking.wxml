@@ -1,0 +1,144 @@
+<!-- pages/ranking/ranking.wxml -->
+<view class="container">
+  <!-- 顶部筛选区域 -->
+  <view class="filter-section" style="width: 90vw;">
+    <view class="filter-header">
+      <text class="section-title">教师排名</text>
+      <view class="filter-controls">
+        <picker class="time-picker" range="{{timeRange}}" value="{{timeIndex}}" bindchange="onTimeChange">
+          <view class="picker-text">{{timeRange[timeIndex]}} ▼</view>
+        </picker>
+        <picker class="type-picker" range="{{typeRange}}" value="{{typeIndex}}" bindchange="onTypeChange">
+          <view class="picker-text">{{typeRange[typeIndex]}} ▼</view>
+        </picker>
+      </view>
+    </view>
+  </view>
+
+  <!-- 排名列表 -->
+  <scroll-view class="ranking-list" style="width: 90vw;" scroll-y>
+    <!-- 前三名特殊展示 -->
+    <view class="top-three">
+      <view class="top-item top-2" wx:if="{{rankingData.length > 1}}">
+        <view class="top-rank">2</view>
+        <view class="top-avatar">
+          <image class="avatar-img" src="{{rankingData[1].avatar}}" mode="aspectFill"></image>
+          <view class="avatar-placeholder" wx:if="{{!rankingData[1].avatar}}">👤</view>
+        </view>
+        <view class="top-info">
+          <text class="top-name">{{rankingData[1].name}}</text>
+          <text class="top-department">{{rankingData[1].department}}</text>
+        </view>
+        <view class="top-score">
+          <text class="score-value">{{rankingData[1].score}}</text>
+          <text class="score-label">分</text>
+        </view>
+      </view>
+
+      <view class="top-item top-1" wx:if="{{rankingData.length > 0}}">
+        <view class="top-rank">1</view>
+        <view class="top-avatar">
+          <image class="avatar-img" src="{{rankingData[0].avatar}}" mode="aspectFill"></image>
+          <view class="avatar-placeholder" wx:if="{{!rankingData[0].avatar}}">👑</view>
+        </view>
+        <view class="top-info">
+          <text class="top-name">{{rankingData[0].name}}</text>
+          <text class="top-department">{{rankingData[0].department}}</text>
+        </view>
+        <view class="top-score">
+          <text class="score-value">{{rankingData[0].score}}</text>
+          <text class="score-label">分</text>
+        </view>
+      </view>
+
+      <view class="top-item top-3" wx:if="{{rankingData.length > 2}}">
+        <view class="top-rank">3</view>
+        <view class="top-avatar">
+          <image class="avatar-img" src="{{rankingData[2].avatar}}" mode="aspectFill"></image>
+          <view class="avatar-placeholder" wx:if="{{!rankingData[2].avatar}}">👤</view>
+        </view>
+        <view class="top-info">
+          <text class="top-name">{{rankingData[2].name}}</text>
+          <text class="top-department">{{rankingData[2].department}}</text>
+        </view>
+        <view class="top-score">
+          <text class="score-value">{{rankingData[2].score}}</text>
+          <text class="score-label">分</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 其他排名列表 -->
+    <view class="ranking-items">
+      <view class="ranking-item" wx:for="{{rankingData}}" wx:key="id" wx:for-index="index" wx:if="{{index >= 3}}">
+        <view class="rank-number">{{index + 1}}</view>
+        
+        <view class="teacher-avatar">
+          <image class="avatar-img" src="{{item.avatar}}" mode="aspectFill"></image>
+          <view class="avatar-placeholder" wx:if="{{!item.avatar}}">👤</view>
+        </view>
+        
+        <view class="teacher-info">
+          <text class="teacher-name">{{item.name}}</text>
+          <text class="teacher-department">{{item.department}}</text>
+        </view>
+        
+        <view class="score-info">
+          <text class="score">{{item.score}}分</text>
+          <view class="trend {{item.change >= 0 ? 'up' : 'down'}}">
+            {{item.change >= 0 ? '↑' : '↓'}} {{Math.abs(item.change)}}
+          </view>
+        </view>
+        
+        <view class="medal" wx:if="{{item.medal}}">
+          <text class="medal-icon">{{item.medal}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 当前用户排名 -->
+    <view class="current-user-section" wx:if="{{currentUser}}">
+      <view class="section-divider">
+        <text class="divider-text">我的排名</text>
+      </view>
+      <view class="current-user-item">
+        <view class="rank-number {{currentUser.rank <= 3 ? 'top-' + currentUser.rank : ''}}">
+          {{currentUser.rank}}
+        </view>
+        
+        <view class="teacher-avatar current">
+          <image class="avatar-img" src="{{currentUser.avatar}}" mode="aspectFill"></image>
+          <view class="avatar-placeholder" wx:if="{{!currentUser.avatar}}">👤</view>
+        </view>
+        
+        <view class="teacher-info">
+          <text class="teacher-name">{{currentUser.name}}</text>
+          <text class="teacher-department">{{currentUser.department}}</text>
+        </view>
+        
+        <view class="score-info">
+          <text class="score">{{currentUser.score}}分</text>
+          <view class="trend {{currentUser.change >= 0 ? 'up' : 'down'}}">
+            {{currentUser.change >= 0 ? '↑' : '↓'}} {{Math.abs(currentUser.change)}}
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部统计信息 -->
+  <view class="stats-footer">
+    <view class="stats-item">
+      <text class="stats-value">{{totalTeachers}}</text>
+      <text class="stats-label">总人数</text>
+    </view>
+    <view class="stats-item">
+      <text class="stats-value">{{averageScore}}</text>
+      <text class="stats-label">平均分</text>
+    </view>
+    <view class="stats-item">
+      <text class="stats-value">{{excellentRate}}%</text>
+      <text class="stats-label">优秀率</text>
+    </view>
+  </view>
+</view>

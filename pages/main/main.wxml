@@ -1,0 +1,58 @@
+<!-- pages/index/index.wxml -->
+<view class="container">
+  <!-- 功能按钮区域 -->
+  <view class="function-section" style="width:100%">
+    <view class="function-buttons">
+      <view class="function-item" bindtap="navigateTo" data-page="addEvaluation">
+        <view class="function-icon add-icon">
+          <text class="icon">✅</text>
+        </view>
+        <text class="function-text">新增考核</text>
+      </view>
+      <view class="function-item" bindtap="navigateTo" data-page="viewData">
+        <view class="function-icon data-icon">
+          <text class="icon">💬</text>
+        </view>
+        <text class="function-text">查看数据</text>
+      </view>
+      <view class="function-item" bindtap="navigateTo" data-page="teacherFiles">
+        <view class="function-icon profile-icon">
+          <text class="icon">👤</text>
+        </view>
+        <text class="function-text">教师档案</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 数据概览 -->
+  <view class="data-section" style="width: 85vw;">
+    <text class="section-title">数据概览</text>
+    <view class="data-cards">
+      <view class="data-card card-1">
+        <view class="card-content">
+          <text class="data-value">22分</text>
+          <text class="data-label">优秀率</text>
+        </view>
+        <text class="trend">↑</text>
+      </view>
+      <view class="data-card card-2">
+        <view class="card-content">
+          <text class="data-value">24.0+</text>
+          <text class="data-label">平均分基础</text>
+        </view>
+        <text class="trend">↑</text>
+      </view>
+      <view class="data-card card-3">
+        <view class="card-content">
+          <text class="data-value">16.0+</text>
+          <text class="data-label">平均分基础</text>
+        </view>
+        <text class="trend">↑</text>
+      </view>
+    </view>
+  </view>
+
+  <view style="height: 550rpx;">
+  </view>
+  
+</view>

@@ -1,0 +1,69 @@
+<!-- pages/assessment/assessment.wxml -->
+<view class="container">
+
+  <!-- 数据概览 -->
+  <view class="overview" style="width: 100%;" style="width: 100%;">
+    <view class="overview-title">本月考核概览</view>
+    <view class="stats-grid">
+      <view class="stat-item">
+        <text class="stat-value">{{assessmentData.currentScore || 0}}</text>
+        <text class="stat-label">当前分数</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-value">{{assessmentData.rank || '-'}}</text>
+        <text class="stat-label">部门排名</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-value">{{assessmentData.completionRate || '0%'}}</text>
+        <text class="stat-label">完成度</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 考核项目列表 -->
+  <view class="assessment-list" style="width: 100%;">
+    <view class="section-title">考核项目</view>
+    
+    <view class="assessment-item" wx:for="{{assessmentList}}" wx:key="id">
+      <view bindtap="navigateToEvaluation" data-id="{{item.id}}">
+        <view class="item-header">
+          <text class="item-name">{{item.indicatorName}}</text>
+          <text class="item-score {{item.score >= 90 ? 'excellent' : item.score >= 80 ? 'good' : 'average'}}">
+            {{item.score?item.score:0}}分
+          </text>
+        </view>
+        <view class="item-desc">{{item.description?item.description:""}}</view>
+        <view class="item-progress">
+          <view class="progress-bar">
+            <view class="progress-fill" style="width: {{item.progress}}%"></view>
+          </view>
+          <text class="progress-text">{{item.progress}}%</text>
+        </view>
+        <view class="item-footer">
+          <text class="item-time">考核时间：{{item.assessTime}}</text>
+          <text class="item-status {{item.status}}">{{item.statusText}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 功能菜单 -->
+  <!-- <view class="menu-grid">
+    <view class="menu-item" bindtap="onMenuTap" data-page="detail">
+      <view class="menu-icon">📊</view>
+      <text class="menu-text">详细报告</text>
+    </view>
+    <view class="menu-item" bindtap="onMenuTap" data-page="history">
+      <view class="menu-icon">📅</view>
+      <text class="menu-text">历史记录</text>
+    </view>
+    <view class="menu-item" bindtap="onMenuTap" data-page="compare">
+      <view class="menu-icon">📈</view>
+      <text class="menu-text">对比分析</text>
+    </view>
+    <view class="menu-item" bindtap="onMenuTap" data-page="settings">
+      <view class="menu-icon">⚙️</view>
+      <text class="menu-text">个人设置</text>
+    </view>
+  </view> -->
+</view>

@@ -1,0 +1,80 @@
+<!-- pages/profile/profile.wxml -->
+<view class="container">
+  <!-- 用户信息头部 -->
+  <view class="user-header" style="width:85vw;">
+    <view class="user-avatar">
+      <image class="avatar-img" src="http://120.48.81.209/teacher_kpi9g/images/avatar.png" mode="aspectFill"></image>
+    </view>
+    <view class="user-info">
+      <text class="user-name">{{userInfo.userName || '未登录'}}</text>
+      <text class="user-department">{{userInfo.typeName ||userInfo.role.nickName || '请先登录'}}</text>
+      <text class="user-score">当前绩效分：{{userInfo.score || 0}}</text>
+    </view>
+    <view class="user-rank">
+      <text class="rank-label">排名</text>
+      <text class="rank-number">#{{userInfo.rank || '-'}}</text>
+    </view>
+  </view>
+
+  <!-- 数据概览 -->
+  <view class="stats-overview" style="width:85vw;">
+    <view class="stat-item">
+      <text class="stat-value">{{userStats.totalEvaluations}}</text>
+      <text class="stat-label">总考核次数</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-value">{{userStats.averageScore}}</text>
+      <text class="stat-label">平均分</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-value">{{userStats.completionRate}}%</text>
+      <text class="stat-label">完成率</text>
+    </view>
+  </view>
+
+  <!-- 功能菜单 -->
+  <view class="menu-section" style="width:90vw;">
+    <view class="menu-group">
+      <view class="menu-title">考核管理</view>
+      <view class="menu-list">
+        <view class="menu-item" bindtap="navigateTo" data-url="/pages/evaluation/my">
+          <view class="menu-icon">📋</view>
+          <text class="menu-text">我的考核记录</text>
+          <view class="menu-badge" wx:if="{{unreadEvaluations > 0}}">{{unreadEvaluations}}</view>
+          <view class="menu-arrow">›</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="menu-group">
+      <view class="menu-title">其他</view>
+      <view class="menu-list">
+        <view class="menu-item" bindtap="onFeedback">
+          <view class="menu-icon">💬</view>
+          <text class="menu-text">意见反馈</text>
+          <view class="menu-arrow">›</view>
+        </view>
+        <view class="menu-item" bindtap="onAbout">
+          <view class="menu-icon">ℹ️</view>
+          <text class="menu-text">关于我们</text>
+          <view class="menu-arrow">›</view>
+        </view>
+        <view class="menu-item" bindtap="onShare">
+          <view class="menu-icon">📤</view>
+          <text class="menu-text">分享应用</text>
+          <view class="menu-arrow">›</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 退出登录 -->
+  <view class="logout-section" wx:if="{{userInfo.userName}}" style="width:85vw;">
+    <button class="logout-btn" bindtap="onLogout">退出登录</button>
+  </view>
+
+  <!-- 登录按钮 -->
+  <view class="login-section" wx:if="{{!userInfo.userName}}" style="width:85vw;">
+    <button class="login-btn" bindtap="onLogin">立即登录</button>
+  </view>
+</view>
