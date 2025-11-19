@@ -14,7 +14,8 @@ Page({
       averageScore: 88.5,
       completionRate: 92
     },
-    unreadEvaluations: 2
+    unreadEvaluations: 2,
+    kpiList: [] // KPI列表
   },
 
   onLoad() {
@@ -139,6 +140,117 @@ Page({
     wx.showShareMenu({
       withShareTicket: true
     });
+  },
+
+  // 导出教师绩效
+  async onExportKPI() {
+    const _that = this;
+    const userInfo = wx.getStorageSync('userInfo');
+    
+    if (!userInfo || !userInfo.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none'
+      });
+      return;
+    }
+
+    // 写死的KPI列表
+    const kpiList = [
+      { id: 1, name: '课堂教学质量评估' },
+      { id: 2, name: '科研论文发表' },
+      { id: 3, name: '学生指导服务' },
+      { id: 4, name: '教学成果展示' },
+      { id: 5, name: '教研活动参与' }
+    ];
+
+    // 构建选择列表（显示KPI名称）
+    const itemList = kpiList.map(item => item.name);
+
+    // 显示选择弹窗
+    wx.showActionSheet({
+      itemList: itemList,
+      success: function (res) {
+        if (!res.cancel) {
+          const selectedKpi = kpiList[res.tapIndex];
+          // 选择完成后，执行导出
+          _that.doExportKPI(selectedKpi.id, userInfo.id);
+        }
+      },
+      fail: (err) => {
+        if (err.errMsg !== 'showActionSheet:fail cancel') {
+          wx.showToast({
+            title: '选择失败',
+            icon: 'none'
+          });
+        }
+      }
+    });
+  },
+
+  // 执行导出
+  async doExportKPI(kpiId, userId) {
+    wx.showLoading({
+      title: '导出中...',
+      mask: true
+    });
+
+    try {
+      const fileBuffer = await apiService.exportKPI({
+        userId: userId,
+        kpiId: kpiId
+      });
+      
+      // 生成临时文件路径
+      const filePath = `${wx.env.USER_DATA_PATH}/export_${Date.now()}.pdf`; // 根据实际文件类型修改扩展名
+      const fs = wx.getFileSystemManager();
+      
+      // 将文件流写入临时文件
+      fs.writeFile({
+        filePath: filePath,
+        data: fileBuffer,
+        success: () => {
+          wx.hideLoading();
+          // 打开文档
+          wx.openDocument({
+            filePath: filePath,
+            showMenu: true,
+            success: () => {
+              console.log('打开文档成功');
+            },
+            fail: (err) => {
+              console.error('打开文档失败:', err);
+              // 如果打开文档失败，尝试预览图片
+              wx.previewImage({
+                urls: [filePath],
+                fail: (previewErr) => {
+                  wx.showToast({
+                    title: '无法打开文件',
+                    icon: 'none'
+                  });
+                  console.error('预览图片失败:', previewErr);
+                }
+              });
+            }
+          });
+        },
+        fail: (err) => {
+          wx.hideLoading();
+          wx.showToast({
+            title: '保存文件失败',
+            icon: 'none'
+          });
+          console.error('写入文件失败:', err);
+        }
+      });
+    } catch (error) {
+      wx.hideLoading();
+      wx.showToast({
+        title: error.message || '导出失败',
+        icon: 'none'
+      });
+      console.error('导出失败:', error);
+    }
   },
 
   onShareAppMessage() {

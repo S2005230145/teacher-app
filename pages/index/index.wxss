@@ -177,6 +177,26 @@
   transform: scaleX(1);
 }
 
+.campus-selector {
+  cursor: pointer;
+}
+
+.campus-text {
+  flex: 1;
+  font-size: 32rpx;
+  color: #333;
+}
+
+.campus-placeholder {
+  color: #bbb;
+}
+
+.arrow-icon {
+  font-size: 28rpx;
+  color: #bbb;
+  margin-left: 20rpx;
+}
+
 .eye-icon {
   padding: 10rpx;
   margin-left: 20rpx;
@@ -190,6 +210,7 @@
   align-items: center;
   justify-content: center;
 }
+
 
 /* 自动登录提示 */
 .auto-login-tip {
@@ -356,4 +377,73 @@
   background: #cccccc;
   opacity: 0.8;
   box-shadow: 0 5rpx 20rpx rgba(0,0,0,0.2);
+}
+
+/* 底部弹窗 */
+.picker-overlay {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 40rpx 30rpx;
+  z-index: 99;
+}
+
+.picker-modal {
+  width: 100%;
+  background: #fff;
+  border-radius: 40rpx 40rpx 0 0;
+  box-shadow: 0 -10rpx 40rpx rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.25s ease-out;
+}
+
+.picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f2f2f2;
+}
+
+.picker-title {
+  font-size: 32rpx;
+  color: #333;
+}
+
+.picker-action {
+  font-size: 30rpx;
+  color: #999;
+}
+
+.picker-action.confirm {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.picker-view {
+  height: 360rpx;
+}
+
+.picker-item {
+  height: 60rpx;
+  line-height: 60rpx;
+  text-align: center;
+  font-size: 32rpx;
+  color: #333;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30rpx);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
