@@ -84,11 +84,18 @@ Page({
 
   async loadEvaluationList(){
     try{
+      console.log(this.data.indicatorId)
+      console.log(this.data.userInfo.id)
       const value=await apiService.getEvaluationList({
         'indicatorId':this.data.indicatorId,
         'userId':this.data.userInfo.id
       });
-      const formattedContents = this.formatContents(value.contents || []);
+      const valueTest=await apiService.getEvaluationListNew({
+        'indicatorId':this.data.indicatorId,
+        'userId':this.data.userInfo.id
+      });
+      console.log(valueTest.contents)
+      const formattedContents = this.formatContents(valueTest.contents || []);
       const currentTab = formattedContents[this.data.currentTab] ? this.data.currentTab : 0;
       this.setData({
         tabs:value.tabs,
@@ -103,14 +110,43 @@ Page({
   },
 
   formatContents(contents = []) {
-    return contents.map(tabContents => tabContents.map(item => ({
-      ...item,
-      uploadDesc: item.uploadDesc || '',
-      fileName: item.fileName || '',
-      filePath: item.filePath || '',
-      uploadStatus: item.uploadStatus || '',
-      uploadError: item.uploadError || ''
-    })));
+    return contents.map(tabContents => tabContents.map(item => {
+      const baseItem = {
+        ...item,
+        uploadDesc: item.uploadDesc || '',
+        fileName: item.fileName || '',
+        filePath: item.filePath || '',
+        uploadStatus: item.uploadStatus || '',
+        uploadError: item.uploadError || '',
+        jsonParamType: null,
+        jsonParamData: [],
+        selectedIndex: -1,
+        selectedValue: '',
+        selectedData: null
+      };
+      
+      // 解析 type.jsonParam 字符串
+      if (item.type && item.type.jsonParam) {
+        try {
+          const jsonParam = JSON.parse(item.type.jsonParam);
+          baseItem.jsonParamType = jsonParam.type || null;
+          baseItem.jsonParamData = Array.isArray(jsonParam.data) ? jsonParam.data : [];
+          
+          // 如果是 select 类型，初始化选择器相关字段
+          if (jsonParam.type === 'select' && Array.isArray(jsonParam.data) && jsonParam.data.length > 0) {
+            baseItem.selectedIndex = item.selectedIndex !== undefined && item.selectedIndex >= 0 ? item.selectedIndex : -1;
+            baseItem.selectedValue = item.selectedValue || '';
+            baseItem.selectedData = item.selectedData || null;
+          }
+        } catch (e) {
+          console.error('解析 jsonParam 失败:', e, item);
+          baseItem.jsonParamType = null;
+          baseItem.jsonParamData = [];
+        }
+      }
+      
+      return baseItem;
+    }));
   },
 
   // 切换标签
@@ -183,6 +219,28 @@ Page({
     this.updateItemFields(id, { uploadDesc: value });
   },
 
+  // 选择器变化处理
+  onSelectChange(e) {
+    const id = e.currentTarget.dataset.id;
+    const selectedIndex = parseInt(e.detail.value) || 0;
+    const currentItem = this.findItemById(id);
+    
+    if (currentItem && currentItem.jsonParamType === 'select' && 
+        Array.isArray(currentItem.jsonParamData) && 
+        currentItem.jsonParamData.length > 0 &&
+        currentItem.jsonParamData[selectedIndex]) {
+      const selectedOption = currentItem.jsonParamData[selectedIndex];
+      this.updateItemFields(id, {
+        selectedIndex: selectedIndex,
+        selectedValue: selectedOption.name || '',
+        selectedData: {
+          name: selectedOption.name || '',
+          score: String(selectedOption.score || '0')
+        }
+      });
+    }
+  },
+
   // 提交评价
   submitEvaluation() {
     wx.showModal({
@@ -214,7 +272,23 @@ Page({
       await this.uploadAllFiles();
       let tcs = [];
       this.data.currentContents.forEach(value=>{
-        tcs.push({"contentId":value.id,"time":value.time!=null?value.time:0});
+        const item = {
+          "contentId": value.id,
+          "time": value.time != null ? value.time : 0,
+        };
+
+        // 如果是 select 类型，添加 type 和 var 字段
+        if (value.jsonParamType === 'select' && value.selectedData) {
+          item.type = "select";
+          item.var = {
+            name: value.selectedData.name,
+            score: value.selectedData.score
+          };
+        }
+
+        console.log(item);
+        
+        tcs.push(item);
       });
       this.setData({
         gradeData:{
@@ -252,11 +326,11 @@ Page({
     try{
       await this.uploadAllFiles();
       const value=await apiService.getLeadersAll();
-      const allIds =value.data.map(item => item.id);
+      const allIds = (value.data || []).map(item => item.id);
       const post=await apiService.postAudit({
         "userId":this.data.userInfo.id,
         "LeaderIds":allIds.join(","),
-        "elementId":this.data.currentElement.id
+        "elementId":this.data.currentElement ? this.data.currentElement.id : null
       })
       if(post.code==200){
         wx.showToast({

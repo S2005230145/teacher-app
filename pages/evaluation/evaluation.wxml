@@ -6,7 +6,7 @@
       <view wx:for="{{tabs}}" wx:key="id" 
           class="tab {{currentTab === index ? 'active' : ''}}"
           bindtap="switchTab" data-index="{{index}}">
-        <text class="tab-text">{{item.name}}</text>
+        <text class="tab-text">{{item.name != null?item.name:''}}</text>
       </view>
     </view>
   </scroll-view>
@@ -24,6 +24,20 @@
               bindtap="showDescription" />
       </view>
 
+      <!-- 选择器类型 -->
+      <view class="scoring-area" wx:if="{{item.jsonParamType === 'select' && item.jsonParamData && item.jsonParamData.length > 0}}">
+        <text class="score-label">选择选项：</text>
+        <picker mode="selector" range="{{item.jsonParamData}}" range-key="name" 
+                value="{{item.selectedIndex >= 0 ? item.selectedIndex : 0}}" 
+                bindchange="onSelectChange" data-id="{{item.id}}">
+          <view class="picker-view">
+            <text class="picker-text">{{item.selectedValue || '请选择'}}</text>
+            <text class="picker-arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 普通类型 - 完成次数 -->
       <view class="scoring-area">
         <text class="score-label">完成次数：</text>
         <view class="score-controls">
@@ -43,7 +57,7 @@
                     value="{{item.uploadDesc}}"
                     data-id="{{item.id}}"
                     bindinput="onDescInput"></textarea>
-        </view>
+        </view>  
 
         <view class="file-row">
           <button class="file-btn" bindtap="chooseFile" data-id="{{item.id}}">上传文件</button>

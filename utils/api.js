@@ -81,6 +81,12 @@ class ApiService {
       data:data
     });
   }
+  getEvaluationListNew(data){
+    return this.request("/front/tk/getElementList/new/",{
+      method: 'POST',
+      data:data
+    });
+  }
 
   grade(data){
     return this.request("/tk/grade/",{
