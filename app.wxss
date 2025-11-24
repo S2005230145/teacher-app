@@ -7,4 +7,7 @@
   justify-content: space-between;
   padding: 200rpx 0;
   box-sizing: border-box;
-} 
+}
+
+/* 注意：微信小程序的picker mode="selector"弹窗是系统原生组件，无法通过CSS修改其内部样式 */
+/* 如需自定义弹窗样式，请使用picker-view组件 */

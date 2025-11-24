@@ -31,6 +31,10 @@
   white-space: nowrap; /* 禁止文字换行 */
 }
 
+.tab-text {
+  margin: 10rpx 20rpx;
+}
+
 .tab.active {
   color: #8B5FBF;
   font-weight: bold;
@@ -55,6 +59,9 @@
 
 .item-header {
   margin-bottom: 15rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .item-title {
@@ -72,9 +79,14 @@
   margin-bottom: 25rpx;
 }
 
+.info-icon {
+  color: #8B5FBF;
+}
+
 /* 评分区域 */
 .scoring-area {
   display: flex;
+  margin-top: 20rpx;
   align-items: center;
   justify-content: space-between;
 }
@@ -128,6 +140,123 @@
   font-size: 28rpx;
   color: #666;
   margin-left: 10rpx;
+}
+
+/* 选择器样式 */
+.picker-view {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 480rpx;
+  height: 70rpx;
+  border: 2rpx solid #ddd;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  background: white;
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: #333;
+  flex: 1;
+}
+
+.picker-text:empty::before {
+  content: '请选择';
+  color: #999;
+}
+
+.picker-arrow {
+  font-size: 24rpx;
+  color: #8B5FBF;
+  margin-left: 10rpx;
+}
+
+.upload-section {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx dashed #eee;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.desc-wrapper {
+  background: #f9f9fb;
+  border: 1rpx solid #e5e5ef;
+  border-radius: 12rpx;
+  padding: 10rpx;
+}
+
+.desc-input {
+  min-height: 80rpx;
+  font-size: 26rpx;
+  color: #333;
+  width: 100%;
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+
+.file-btn {
+  background: #8B5FBF;
+  color: #fff;
+  border: none;
+  padding: 10rpx 26rpx;
+  border-radius: 10rpx;
+  font-size: 26rpx;
+}
+
+.file-name {
+  font-size: 26rpx;
+  color: #555;
+  max-width: 320rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-btn {
+  background: transparent;
+  color: #ff4d4f;
+  border: none;
+  font-size: 24rpx;
+  padding: 0;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+}
+
+.status-tag {
+  font-size: 24rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+}
+
+.status-tag.pending {
+  color: #b37feb;
+  background: #f9f0ff;
+}
+
+.status-tag.uploading {
+  color: #1890ff;
+  background: #e6f7ff;
+}
+
+.status-tag.success {
+  color: #52c41a;
+  background: #f6ffed;
+}
+
+.status-tag.error {
+  color: #ff4d4f;
+  background: #fff1f0;
 }
 
 /* 底部按钮 */

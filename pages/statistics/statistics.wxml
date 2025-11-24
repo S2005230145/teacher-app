@@ -75,7 +75,7 @@
       <view class="analysis-item" wx:for="{{itemAnalysis}}" wx:key="name">
         <view class="item-header">
           <text class="item-name">{{item.name}}</text>
-          <text class="item-score">{{item.averageScore}}分</text>
+          <text class="item-score">{{item.averageScore != null? item.averageScore:0}}分</text>
         </view>
         <view class="progress-bar">
           <view class="progress" style="width: {{item.percentage}}%"></view>
@@ -86,6 +86,31 @@
             {{item.trend >= 0 ? '↑' : '↓'}} {{Math.abs(item.trend)}}%
           </text>
         </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 完成情况 -->
+  <view class="completion-section">
+    <view class="section-header">
+      <text class="section-title">完成情况</text>
+    </view>
+    <view class="completion-cards">
+      <view class="completion-card total">
+        <text class="completion-value">{{completionStatus.total}}</text>
+        <text class="completion-label">总人数</text>
+      </view>
+      <view class="completion-card pending">
+        <text class="completion-value">{{completionStatus.pending}}</text>
+        <text class="completion-label">未开始</text>
+      </view>
+      <view class="completion-card in-progress">
+        <text class="completion-value">{{completionStatus.progress}}</text>
+        <text class="completion-label">进行中</text>
+      </view>
+      <view class="completion-card completed">
+        <text class="completion-value">{{completionStatus.completed}}</text>
+        <text class="completion-label">已完成</text>
       </view>
     </view>
   </view>

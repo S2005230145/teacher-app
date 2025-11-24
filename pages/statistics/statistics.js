@@ -26,6 +26,12 @@ Page({
     averageScore:null,
     excellentRate:null,
     passRate:null,
+    completionStatus: {
+      total: 0,
+      pending: 0,
+      completed: 0,
+      progress: 0
+    },
   },
 
   onLoad() {
@@ -35,14 +41,24 @@ Page({
 
   async loadMessage(){
     try{
-      const value=await apiService.getStatistics();
+      const [stats, completion] = await Promise.all([
+        apiService.getStatistics(),
+        apiService.getTeacherCompletionStatus()
+      ]);
+      const completionData = completion || {};
       this.setData({
-        averageScore:value.averageScore,
-        excellentRate:value.excellentRate,
-        passRate:value.passRate,
-        scoreDistribution:value.scoreDistribution,
-        teacherRanking:value.teacherRanking,
-        itemAnalysis:value.itemAnalysis
+        averageScore:stats.averageScore,
+        excellentRate:stats.excellentRate,
+        passRate:stats.passRate,
+        scoreDistribution:stats.scoreDistribution,
+        teacherRanking:stats.teacherRanking,
+        itemAnalysis:stats.itemAnalysis,
+        completionStatus: {
+          total: completionData.total || 0,
+          pending: completionData.pending || 0,
+          completed: completionData.completed || 0,
+          progress: completionData.progress || 0
+        }
       })
     }catch(e){
       console.error(e);

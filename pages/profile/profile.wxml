@@ -64,6 +64,11 @@
           <text class="menu-text">分享应用</text>
           <view class="menu-arrow">›</view>
         </view>
+        <view class="menu-item" bindtap="onExportKPI">
+          <view class="menu-icon">🧾</view>
+          <text class="menu-text">教师绩效</text>
+          <view class="menu-arrow">›</view>
+        </view>
       </view>
     </view>
   </view>

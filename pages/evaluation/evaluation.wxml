@@ -6,7 +6,7 @@
       <view wx:for="{{tabs}}" wx:key="id" 
           class="tab {{currentTab === index ? 'active' : ''}}"
           bindtap="switchTab" data-index="{{index}}">
-        <text class="tab-text">{{item.name}}</text>
+        <text class="tab-text">{{item.name != null?item.name:''}}</text>
       </view>
     </view>
   </scroll-view>
@@ -15,8 +15,29 @@
   <!-- 评价内容区域 - 双向绑定 -->
   <scroll-view class="content" scroll-y style="margin-bottom:210rpx;">
     <view wx:for="{{currentContents}}" wx:key="id" class="evaluation-item">
-      <text class="item-title">{{item.title}}</text>
-      <text class="item-desc">{{item.description}}</text>
+      <view class="item-header">
+        <text class="item-title">{{item.title}}</text>
+        <icon type="info" size="32"
+              class="info-icon"
+              data-title="{{item.title}}"
+              data-desc="{{item.description}}"
+              bindtap="showDescription" />
+      </view>
+
+      <!-- 选择器类型 -->
+      <view class="scoring-area" wx:if="{{item.jsonParamType === 'select' && item.jsonParamData && item.jsonParamData.length > 0}}">
+        <text class="score-label">选择选项：</text>
+        <picker mode="selector" range="{{item.jsonParamData}}" range-key="name" 
+                value="{{item.selectedIndex >= 0 ? item.selectedIndex : 0}}" 
+                bindchange="onSelectChange" data-id="{{item.id}}">
+          <view class="picker-view">
+            <text class="picker-text">{{item.selectedValue || '请选择'}}</text>
+            <text class="picker-arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 普通类型 - 完成次数 -->
       <view class="scoring-area">
         <text class="score-label">完成次数：</text>
         <view class="score-controls">
@@ -24,6 +45,31 @@
           <input class="score-input" type="number" value="{{item.time}}" 
                  bindinput="onScoreInput" data-id="{{item.id}}" placeholder="0"/>
           <button class="score-btn plus" bindtap="increaseScore" data-id="{{item.id}}">+</button>
+        </view>
+      </view>
+
+      <view class="upload-section">
+        <view class="desc-wrapper">
+          <textarea class="desc-input"
+                    placeholder="请输入材料说明（选填，最多200字）"
+                    maxlength="200"
+                    auto-height
+                    value="{{item.uploadDesc}}"
+                    data-id="{{item.id}}"
+                    bindinput="onDescInput"></textarea>
+        </view>  
+
+        <view class="file-row">
+          <button class="file-btn" bindtap="chooseFile" data-id="{{item.id}}">上传文件</button>
+          <text class="file-name">{{item.fileName || '暂未选择文件'}}</text>
+          <button class="link-btn" wx:if="{{item.filePath}}" bindtap="removeFile" data-id="{{item.id}}">撤销当前文件</button>
+        </view>
+
+        <view class="status-row" wx:if="{{item.uploadStatus}}">
+          <text class="status-tag uploading" wx:if="{{item.uploadStatus === 'uploading'}}">上传中...</text>
+          <text class="status-tag pending" wx:elif="{{item.uploadStatus === 'pending'}}">已选择，等待提交时上传</text>
+          <text class="status-tag success" wx:elif="{{item.uploadStatus === 'uploaded'}}">已上传</text>
+          <text class="status-tag error" wx:elif="{{item.uploadStatus === 'failed'}}">{{item.uploadError || '上传失败，请重试'}}</text>
         </view>
       </view>
     </view>

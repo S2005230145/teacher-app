@@ -9,7 +9,19 @@ Page({
     loading: false,
     errorMessage: '',
     showAutoLoginTip: false,
-    loginTimer: null // 自动登录定时器
+    loginTimer: null, // 自动登录定时器
+    // 校区选择相关
+    campusList: [
+      { id: 1, name: '主校区' },
+      { id: 2, name: '东校区' },
+      { id: 3, name: '西校区' },
+      { id: 4, name: '南校区' },
+      { id: 5, name: '北校区' }
+    ],
+    campusIndex: 0,
+    selectedCampus: '',
+    campusFocus: false,
+    showCampusPicker: false
   },
 
   // 监听输入变化
@@ -42,9 +54,48 @@ Page({
     });
   },
 
+  // 校区选择相关方法
+  showCampusPicker() {
+    this.setData({ 
+      showCampusPicker: true,
+      campusFocus: true 
+    });
+  },
+
+  hideCampusPicker() {
+    this.setData({ 
+      showCampusPicker: false,
+      campusFocus: false 
+    });
+  },
+
+  stopPropagation() {
+    // 阻止事件冒泡
+  },
+
+  // picker-view变化事件
+  onPickerViewChange(e) {
+    const index = e.detail.value[0];
+    this.setData({
+      campusIndex: index
+    });
+  },
+
+  // 确认选择
+  confirmCampusPicker() {
+    const index = this.data.campusIndex;
+    const selectedCampus = this.data.campusList[index].name;
+    this.setData({
+      selectedCampus: selectedCampus,
+      showCampusPicker: false,
+      campusFocus: false
+    });
+    this.checkAutoLogin();
+  },
+
   // 检查是否满足自动登录条件
   checkAutoLogin() {
-    const { username, password, loading } = this.data;
+    const { username, password, selectedCampus, loading } = this.data;
     
     // 清除之前的定时器
     if (this.loginTimer) {
@@ -52,8 +103,8 @@ Page({
       this.loginTimer = null;
     }
 
-    // 如果表单有效且不在加载中，设置自动登录
-    if (username.trim().length > 0 && password.length >= 6 && !loading) {
+    // 如果表单有效且不在加载中，设置自动登录（需要选择校区）
+    if (username.trim().length > 0 && password.length >= 6 && selectedCampus && !loading) {
       this.setData({ 
         showAutoLoginTip: true,
         errorMessage: '' 
@@ -100,7 +151,26 @@ Page({
   // 调用登录API
   async callLoginApi(loginData) {
     try{
-      const res=await apiService.getLogin(loginData);
+      // 获取选中的校区信息
+      const selectedCampusId = this.data.campusList[this.data.campusIndex]?.id;
+      const selectedCampusName = this.data.selectedCampus;
+      
+      // 将校区信息添加到登录数据中
+      const loginDataWithCampus = {
+        ...loginData,
+        campusId: selectedCampusId,
+        campusName: selectedCampusName
+      };
+      
+      // 保存校区信息到本地存储
+      if (selectedCampusId && selectedCampusName) {
+        wx.setStorageSync('selectedCampus', {
+          id: selectedCampusId,
+          name: selectedCampusName
+        });
+      }
+      
+      const res=await apiService.getLogin(loginDataWithCampus);
       if (res.code === 200) {
         this.setData({loading:false});
         wx.setStorageSync('userInfo', res);
@@ -173,6 +243,16 @@ Page({
     wx.makePhoneCall({
       phoneNumber: '400-123-4567'
     });
+  },
+
+  // 页面加载时初始化
+  onLoad() {
+    // 初始化默认选中第一个校区
+    if (this.data.campusList.length > 0 && !this.data.selectedCampus) {
+      this.setData({
+        selectedCampus: this.data.campusList[0].name
+      });
+    }
   },
 
   // 页面卸载时清理定时器

@@ -9,7 +9,8 @@
 .stats-overview,
 .charts-section,
 .ranking-section,
-.analysis-section {
+.analysis-section,
+.completion-section {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 15rpx;
   margin-bottom: 30rpx;
@@ -249,8 +250,52 @@
 }
 
 /* 考核项目分析 */
-.analysis-section {
+.analysis-section,
+.completion-section {
   padding: 30rpx;
+}
+
+.completion-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+}
+
+.completion-card {
+  padding: 30rpx 20rpx;
+  border-radius: 12rpx;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1rpx solid rgba(139, 95, 191, 0.1);
+  text-align: center;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.completion-value {
+  display: block;
+  font-size: 40rpx;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+
+.completion-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.completion-card.total .completion-value {
+  color: #8B5FBF;
+}
+
+.completion-card.pending .completion-value {
+  color: #fa8c16;
+}
+
+.completion-card.in-progress .completion-value {
+  color: #1890ff;
+}
+
+.completion-card.completed .completion-value {
+  color: #52c41a;
 }
 
 .analysis-list {

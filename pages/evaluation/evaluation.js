@@ -84,17 +84,69 @@ Page({
 
   async loadEvaluationList(){
     try{
+      console.log(this.data.indicatorId)
+      console.log(this.data.userInfo.id)
       const value=await apiService.getEvaluationList({
         'indicatorId':this.data.indicatorId,
         'userId':this.data.userInfo.id
       });
+      const valueTest=await apiService.getEvaluationListNew({
+        'indicatorId':this.data.indicatorId,
+        'userId':this.data.userInfo.id
+      });
+      console.log(valueTest.contents)
+      const formattedContents = this.formatContents(valueTest.contents || []);
+      const currentTab = formattedContents[this.data.currentTab] ? this.data.currentTab : 0;
       this.setData({
         tabs:value.tabs,
-        contents:value.contents
+        contents:formattedContents,
+        currentTab,
+        currentContents: formattedContents[currentTab] || [],
+        currentElement: value.tabs ? value.tabs[currentTab] : null
       });
     }catch(e){
       console.error(e);
     }
+  },
+
+  formatContents(contents = []) {
+    return contents.map(tabContents => tabContents.map(item => {
+      const baseItem = {
+        ...item,
+        uploadDesc: item.uploadDesc || '',
+        fileName: item.fileName || '',
+        filePath: item.filePath || '',
+        uploadStatus: item.uploadStatus || '',
+        uploadError: item.uploadError || '',
+        jsonParamType: null,
+        jsonParamData: [],
+        selectedIndex: -1,
+        selectedValue: '',
+        selectedData: null
+      };
+      
+      // 解析 type.jsonParam 字符串
+      if (item.type && item.type.jsonParam) {
+        try {
+          const jsonParam = JSON.parse(item.type.jsonParam);
+          baseItem.jsonParamType = jsonParam.type || null;
+          baseItem.jsonParamData = Array.isArray(jsonParam.data) ? jsonParam.data : [];
+          
+          // 如果是 select 类型，初始化选择器相关字段
+          if (jsonParam.type === 'select' && Array.isArray(jsonParam.data) && jsonParam.data.length > 0) {
+            baseItem.selectedIndex = item.selectedIndex !== undefined && item.selectedIndex >= 0 ? item.selectedIndex : -1;
+            baseItem.selectedValue = item.selectedValue || '';
+            baseItem.selectedData = item.selectedData || null;
+          }
+        } catch (e) {
+          console.error('解析 jsonParam 失败:', e, item);
+          baseItem.jsonParamType = null;
+          baseItem.jsonParamData = [];
+        }
+      }
+      
+      return baseItem;
+    }));
   },
 
   // 切换标签
@@ -134,19 +186,26 @@ Page({
 
   // 更新分数
   updateScore(id, newScore) {
-    const { contents, currentTab } = this.data;
-    
-    const updatedContents = contents.map((tabContents, tabIndex) => {
-      if (tabIndex === currentTab) {
-        return tabContents.map(item => {
-          if (item.id === id) {
-            return { ...item, time: newScore };
-          }
-          return item;
-        });
+    this.updateItemFields(id, { time: newScore });
+  },
+
+  // 根据ID查找项目
+  findItemById(id) {
+    const { contents } = this.data;
+    for (const tabContents of contents) {
+      const found = tabContents.find(item => item.id === id);
+      if (found) {
+        return found;
       }
-      return tabContents;
-    });
+    }
+    return null;
+  },
+
+  updateItemFields(id, fields) {
+    const { contents, currentTab } = this.data;
+    const updatedContents = contents.map(tabContents =>
+      tabContents.map(item => item.id === id ? { ...item, ...fields } : item)
+    );
 
     this.setData({
       contents: updatedContents,
@@ -154,10 +213,32 @@ Page({
     });
   },
 
-  // 根据ID查找项目
-  findItemById(id) {
-    const { contents, currentTab } = this.data;
-    return contents[currentTab].find(item => item.id === id);
+  onDescInput(e) {
+    const { id } = e.currentTarget.dataset;
+    const value = e.detail.value;
+    this.updateItemFields(id, { uploadDesc: value });
+  },
+
+  // 选择器变化处理
+  onSelectChange(e) {
+    const id = e.currentTarget.dataset.id;
+    const selectedIndex = parseInt(e.detail.value) || 0;
+    const currentItem = this.findItemById(id);
+    
+    if (currentItem && currentItem.jsonParamType === 'select' && 
+        Array.isArray(currentItem.jsonParamData) && 
+        currentItem.jsonParamData.length > 0 &&
+        currentItem.jsonParamData[selectedIndex]) {
+      const selectedOption = currentItem.jsonParamData[selectedIndex];
+      this.updateItemFields(id, {
+        selectedIndex: selectedIndex,
+        selectedValue: selectedOption.name || '',
+        selectedData: {
+          name: selectedOption.name || '',
+          score: String(selectedOption.score || '0')
+        }
+      });
+    }
   },
 
   // 提交评价
@@ -188,9 +269,26 @@ Page({
 
   async putGrade(){
     try{
+      await this.uploadAllFiles();
       let tcs = [];
       this.data.currentContents.forEach(value=>{
-        tcs.push({"contentId":value.id,"time":value.time!=null?value.time:0});
+        const item = {
+          "contentId": value.id,
+          "time": value.time != null ? value.time : 0,
+        };
+
+        // 如果是 select 类型，添加 type 和 var 字段
+        if (value.jsonParamType === 'select' && value.selectedData) {
+          item.type = "select";
+          item.var = {
+            name: value.selectedData.name,
+            score: value.selectedData.score
+          };
+        }
+
+        console.log(item);
+        
+        tcs.push(item);
       });
       this.setData({
         gradeData:{
@@ -217,17 +315,22 @@ Page({
       }
     }catch(e){
       console.error(e);
+      wx.showToast({
+        title: e.message || '提交失败',
+        icon: 'none'
+      });
     }
   },
 
   async putAudit(){
     try{
+      await this.uploadAllFiles();
       const value=await apiService.getLeadersAll();
-      const allIds =value.data.map(item => item.id);
+      const allIds = (value.data || []).map(item => item.id);
       const post=await apiService.postAudit({
         "userId":this.data.userInfo.id,
         "LeaderIds":allIds.join(","),
-        "elementId":this.data.currentElement.id
+        "elementId":this.data.currentElement ? this.data.currentElement.id : null
       })
       if(post.code==200){
         wx.showToast({
@@ -242,6 +345,10 @@ Page({
       }
     }catch(e){
       console.error(e);
+      wx.showToast({
+        title: e.message || '提交审核失败',
+        icon: 'none'
+      });
     }
   },
 
@@ -250,5 +357,97 @@ Page({
     wx.navigateBack({
       delta: 1
     });
+  },
+
+  showDescription(e) {
+    const { title, desc } = e.currentTarget.dataset;
+    wx.showModal({
+      title: title || '简介',
+      content: desc || '暂无简介',
+      showCancel: false
+    });
+  },
+
+  chooseFile(e) {
+    const id = e.currentTarget?.dataset?.id;
+    if (!id) {
+      return;
+    }
+    wx.chooseMessageFile({
+      count: 1,
+      type: 'file',
+      success: (res) => {
+        const file = res.tempFiles?.[0];
+        if (!file) return;
+        this.updateItemFields(id, {
+          fileName: file.name,
+          filePath: file.path,
+          uploadStatus: 'pending',
+          uploadError: ''
+        });
+      }
+    });
+  },
+
+  removeFile(e) {
+    console.log(e);
+    const id = e.currentTarget.dataset.id;
+    this.updateItemFields(id, {
+      fileName: '',
+      filePath: '',
+      uploadStatus: '',
+      uploadError: ''
+    });
+  },
+
+  async uploadAllFiles() {
+    const { contents, userInfo } = this.data;
+    if (!userInfo || !userInfo.id) {
+      throw new Error('用户信息缺失，请重新登录');
+    }
+    const filesToUpload = [];
+    contents.forEach(tabContents => {
+      tabContents.forEach(item => {
+        if (item.filePath && item.uploadStatus !== 'uploaded') {
+          filesToUpload.push(item);
+        }
+      });
+    });
+
+    if (!filesToUpload.length) {
+      return;
+    }
+
+    wx.showLoading({
+      title: '文件上传中...',
+      mask: true
+    });
+
+    try {
+      for (const fileItem of filesToUpload) {
+        this.updateItemFields(fileItem.id, { uploadStatus: 'uploading', uploadError: '' });
+        try {
+          const res = await apiService.uploadEvaluationFile({
+            filePath: fileItem.filePath,
+            description: fileItem.uploadDesc || '',
+            contentId: fileItem.id,
+            userId: userInfo.id
+          });
+          if (res.code === 200) {
+            this.updateItemFields(fileItem.id, { uploadStatus: 'uploaded' });
+          } else {
+            const reason = res.reason || '上传失败，请重试';
+            this.updateItemFields(fileItem.id, { uploadStatus: 'failed', uploadError: reason });
+            throw new Error(reason);
+          }
+        } catch (error) {
+          const message = error?.message || '上传失败，请重试';
+          this.updateItemFields(fileItem.id, { uploadStatus: 'failed', uploadError: message });
+          throw error;
+        }
+      }
+    } finally {
+      wx.hideLoading();
+    }
   }
 });
