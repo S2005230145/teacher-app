@@ -28,11 +28,8 @@
       <view bindtap="navigateToEvaluation" data-id="{{item.id}}">
         <view class="item-header">
           <text class="item-name">{{item.indicatorName}}</text>
-          <text wx:if="{{item.score<5000&&item.score>-5000}}" class="item-score {{item.score >= 90 ? 'excellent' : item.score >= 80 ? 'good' : 'average'}}">
+          <text class="item-score {{item.score >= 90 ? 'excellent' : item.score >= 80 ? 'good' : 'average'}}">
             {{item.score?item.score:0}}分
-          </text>
-          <text wx:if="{{item.score>=5000||item.score<=-5000}}" class="item-score {{item.score >= 5000 ? 'excellent' : 'average'}}">
-            {{item.score>=5000?'合格':'不合格'}}
           </text>
         </view>
         <view class="item-desc">{{item.description?item.description:""}}</view>
