@@ -2,7 +2,7 @@
 <view class="container">
 
   <!-- 数据概览 -->
-  <view class="overview" style="width: 100%;" style="width: 100%;">
+  <view class="overview" style="width: 100%;">
     <view class="overview-title">本月考核概览</view>
     <view class="stats-grid">
       <view class="stat-item">
