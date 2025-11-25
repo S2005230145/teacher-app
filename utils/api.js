@@ -51,7 +51,16 @@ class ApiService {
       method: 'POST'
     })
   }
-  //index.js
+  //index.js - 获取学校列表
+  getSchoolList(){
+    return this.request("/front/tk/school/list/",{
+      method: 'POST',
+      header: {
+        'Content-Type': 'application/json'
+      }
+    })
+  }
+  //index.js - 登录
   getLogin(data){
     return this.request("/tk/login/noauth/",{
       method: 'POST',

@@ -149,19 +149,26 @@ Page({
         'indicatorId':this.data.indicatorId,
         'userId':this.data.userInfo.id
       });
+      console.log(valueTest)
       valueTest.contents.forEach(value=>{
         value.forEach(v1=>{
           v1.data=JSON.parse(v1.data);
         });
       })
-      const formattedContents = valueTest.contents;
+      const formattedContents = valueTest.contents || [];
+      const formatTabs = valueTest.tabs || [];
       const currentTab = formattedContents[this.data.currentTab] ? this.data.currentTab : 0;
+      const currentTabInfo = formatTabs[currentTab] || null;
+      console.log('当前页签信息:', currentTabInfo);
+      if (currentTabInfo && Object.prototype.hasOwnProperty.call(currentTabInfo, 'robotScore')) {
+        console.log('当前 robotScore:', currentTabInfo.robotScore);
+      }
       this.setData({
-        tabs:value.tabs,
+        tabs: formatTabs,
         contents:formattedContents,
         currentTab,
         currentContents: formattedContents[currentTab] || [],
-        currentElement: value.tabs ? value.tabs[currentTab] : null
+        currentElement: currentTabInfo
       });
       // 初始化按钮状态
       this.updateButtonState();
@@ -530,4 +537,6 @@ Page({
       wx.hideLoading();
     }
   }
+  ,
+
 });

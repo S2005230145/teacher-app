@@ -1,5 +1,6 @@
 <!-- pages/evaluation/evaluation.wxml -->
 <view class="container" style="background-color: white;">
+
   <!-- 评价要素标签 - 双向绑定 -->
   <scroll-view class="tabs-scroll" scroll-x>
     <view class="tabs" style="width: 100%;">
@@ -10,8 +11,16 @@
       </view>
     </view>
   </scroll-view>
-  
 
+  <!-- 当前页评分信息 -->
+  <view class="score-banner" style="width:100%" wx:if="{{currentElement && currentElement.robotScore != null}}">
+    <view class="score-banner__track">
+      <text class="score-banner__label">当前评测页评分</text>
+      <text class="score-banner__value">{{currentElement.robotScore}}</text>
+    </view>
+  </view>
+
+  
   <!-- 评价内容区域 - 双向绑定 -->
   <scroll-view class="content" scroll-y style="margin-bottom:210rpx;">
     <view wx:for="{{currentContents}}" wx:key="id" class="evaluation-item">
@@ -38,7 +47,7 @@
 
       <view class="scoring-area-rad" wx:if="{{item.data.type!='count'}}">
           <text class="score-label-rad">考核等级：</text>
-          <view class="radio-controls-rad" wx:for="{{item.data.data}}" wx:for-item="value">
+          <view class="radio-controls-rad" wx:for="{{item.data.data}}" wx:for-item="value" wx:key="name">
             <view class="radio-option {{currentLevel[item.id] && currentLevel[item.id].name === value.name ? 'selected' : ''}}" bindtap="selectLevel"  data-id="{{item.id}}" data-level="{{value.name}}" data-score="{{value.score}}">
               <text class="radio-text">{{value.name}}</text>
             </view>
@@ -69,8 +78,8 @@
           <text class="status-tag error" wx:elif="{{item.uploadStatus === 'failed'}}">{{item.uploadError || '上传失败，请重试'}}</text>
         </view>
       </view>
-    </view>
-  </scroll-view>
+        </view>
+      </scroll-view>
 
   <!-- 底部按钮 -->
   <view class="footer">

@@ -1,25 +1,20 @@
 import apiService from '../../utils/api.js';
 Page({
   data: {
-    username: '',
+    phone: '',
     password: '',
-    usernameFocus: false,
+    phoneFocus: false,
     passwordFocus: false,
     passwordVisible: false,
     loading: false,
     errorMessage: '',
     showAutoLoginTip: false,
     loginTimer: null, // 自动登录定时器
-    // 校区选择相关
-    campusList: [
-      { id: 1, name: '主校区' },
-      { id: 2, name: '东校区' },
-      { id: 3, name: '西校区' },
-      { id: 4, name: '南校区' },
-      { id: 5, name: '北校区' }
-    ],
+    // 学校选择相关
+    campusList: [],
     campusIndex: 0,
     selectedCampus: '',
+    selectedCampusId: null,
     campusFocus: false,
     showCampusPicker: false
   },
@@ -30,12 +25,12 @@ Page({
     this.checkAutoLogin();
   },
 
-  onUsernameFocus() {
-    this.setData({ usernameFocus: true });
+  onPhoneFocus() {
+    this.setData({ phoneFocus: true });
   },
 
-  onUsernameBlur() {
-    this.setData({ usernameFocus: false });
+  onPhoneBlur() {
+    this.setData({ phoneFocus: false });
     this.checkAutoLogin();
   },
 
@@ -54,7 +49,7 @@ Page({
     });
   },
 
-  // 校区选择相关方法
+  // 学校选择相关方法
   showCampusPicker() {
     this.setData({ 
       showCampusPicker: true,
@@ -84,9 +79,10 @@ Page({
   // 确认选择
   confirmCampusPicker() {
     const index = this.data.campusIndex;
-    const selectedCampus = this.data.campusList[index].name;
+    const selectedCampus = this.data.campusList[index];
     this.setData({
-      selectedCampus: selectedCampus,
+      selectedCampus: selectedCampus.campusName || selectedCampus.name,
+      selectedCampusId: selectedCampus.id,
       showCampusPicker: false,
       campusFocus: false
     });
@@ -95,7 +91,7 @@ Page({
 
   // 检查是否满足自动登录条件
   checkAutoLogin() {
-    const { username, password, selectedCampus, loading } = this.data;
+    const { phone, password, selectedCampusId, loading } = this.data;
     
     // 清除之前的定时器
     if (this.loginTimer) {
@@ -103,8 +99,11 @@ Page({
       this.loginTimer = null;
     }
 
+    // 验证手机号格式（11位数字）
+    const phoneValid = /^1[3-9]\d{9}$/.test(phone.trim());
+    
     // 如果表单有效且不在加载中，设置自动登录（需要选择校区）
-    if (username.trim().length > 0 && password.length >= 6 && selectedCampus && !loading) {
+    if (phoneValid && password.length >= 6 && selectedCampusId !== null && !loading) {
       this.setData({ 
         showAutoLoginTip: true,
         errorMessage: '' 
@@ -121,8 +120,9 @@ Page({
 
   // 计算属性：表单是否有效
   get isFormValid() {
-    const { username, password } = this.data;
-    return username.trim().length > 0 && password.length >= 6;
+    const { phone, password } = this.data;
+    const phoneValid = /^1[3-9]\d{9}$/.test(phone.trim());
+    return phoneValid && password.length >= 6;
   },
 
   // 登录方法
@@ -132,6 +132,35 @@ Page({
       clearTimeout(this.loginTimer);
       this.loginTimer = null;
     }
+    
+    // 验证手机号
+    const phone = this.data.phone.trim();
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
+      this.setData({ 
+        errorMessage: '请输入正确的手机号',
+        loading: false
+      });
+      return;
+    }
+    
+    // 验证密码
+    if (this.data.password.length < 6 || this.data.password.length > 20) {
+      this.setData({ 
+        errorMessage: '密码长度为6-20位',
+        loading: false
+      });
+      return;
+    }
+    
+    // 验证学校
+    if (this.data.selectedCampusId === null) {
+      this.setData({ 
+        errorMessage: '请选择学校',
+        loading: false
+      });
+      return;
+    }
+    
     this.setData({ 
       loading: true,
       errorMessage: '',
@@ -140,8 +169,9 @@ Page({
     try {
       // 调用登录接口
       this.callLoginApi({
-        username: this.data.username.trim(),
-        password: this.data.password
+        phone: phone,
+        password: this.data.password,
+        campusId: this.data.selectedCampusId
       });
     } catch (error) {
       this.handleLoginFailure('网络错误，请检查连接');
@@ -151,45 +181,36 @@ Page({
   // 调用登录API
   async callLoginApi(loginData) {
     try{
-      // 获取选中的校区信息
-      const selectedCampusId = this.data.campusList[this.data.campusIndex]?.id;
-      const selectedCampusName = this.data.selectedCampus;
-      
-      // 将校区信息添加到登录数据中
-      const loginDataWithCampus = {
-        ...loginData,
-        campusId: selectedCampusId,
-        campusName: selectedCampusName
-      };
-      
-      // 保存校区信息到本地存储
-      if (selectedCampusId && selectedCampusName) {
+      // 保存学校信息到本地存储
+      if (this.data.selectedCampusId && this.data.selectedCampus) {
         wx.setStorageSync('selectedCampus', {
-          id: selectedCampusId,
-          name: selectedCampusName
+          id: this.data.selectedCampusId,
+          name: this.data.selectedCampus
         });
       }
-      
-      const res=await apiService.getLogin(loginDataWithCampus);
+      console.log(loginData)
+      const res = await apiService.getLogin(loginData);
+      console.log(res)
       if (res.code === 200) {
         this.setData({loading:false});
-        wx.setStorageSync('userInfo', res);
-        wx.setStorageSync('token', res.token || res.accessToken);
-         // 跳转到考核页面
+        wx.setStorageSync('userInfo', res.data || res);
+        wx.setStorageSync('token', res.token || res.data?.token || res.accessToken);
+        // 跳转到考核页面
         setTimeout(() => {
           wx.reLaunch({
             url: '/pages/main/main'  // 跳转到考核页面
           });
         }, 1500);
-        await this.handleLoginSuccess(res);
+        await this.handleLoginSuccess(res.data || res);
       } else {
         this.setData({loading:false});
-        console.log(`登录失败（${res.statusCode}）`);
-        this.handleLoginFailure(res);
+        const errorMsg = res.message || res.msg || '登录失败，请检查手机号和密码';
+        this.handleLoginFailure(errorMsg);
       }
     }catch(e){
       this.setData({loading:false});
       console.error(e);
+      this.handleLoginFailure(e.message || '网络错误，请稍后重试');
     }
   },
 
@@ -246,11 +267,47 @@ Page({
   },
 
   // 页面加载时初始化
-  onLoad() {
-    // 初始化默认选中第一个校区
-    if (this.data.campusList.length > 0 && !this.data.selectedCampus) {
-      this.setData({
-        selectedCampus: this.data.campusList[0].name
+  async onLoad() {
+    // 获取学校列表
+    await this.loadSchoolList();
+  },
+
+  // 加载学校列表
+  async loadSchoolList() {
+    try {
+      wx.showLoading({ title: '加载中...' });
+      const res = await apiService.getSchoolList();
+      console.log(res)
+      if (res.code === 200 && res.list && res.list.length > 0) {
+        // 格式化学校列表数据
+        const campusList = res.list.map(item => ({
+          id: item.id,
+          name: item.campusName,
+          campusName: item.campusName,
+          address: item.address,
+          phone: item.phone,
+          principal: item.principal
+        }));
+        
+        this.setData({
+          campusList: campusList,
+          campusIndex: 0,
+          selectedCampus: campusList[0].campusName,
+          selectedCampusId: campusList[0].id
+        });
+      } else {
+        wx.showToast({
+          title: '获取学校列表失败',
+          icon: 'none'
+        });
+      }
+      wx.hideLoading();
+    } catch (e) {
+      wx.hideLoading();
+      console.error('获取学校列表失败:', e);
+      wx.showToast({
+        title: '获取学校列表失败',
+        icon: 'none'
       });
     }
   },

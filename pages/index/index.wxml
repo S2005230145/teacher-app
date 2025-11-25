@@ -20,28 +20,29 @@
     </view>
     <!-- 登录表单 -->
     <view class="form">
-      <!-- 校区选择 -->
+      <!-- 学校选择 -->
       <view class="input-group campus-selector {{campusFocus ? 'input-focused' : ''}}" bindtap="showCampusPicker">
         <view class="input-icon">🏫</view>
         <view class="campus-text {{selectedCampus ? '' : 'campus-placeholder'}}">
-          {{selectedCampus || '选择校区'}}
+          {{selectedCampus || '选择学校'}}
         </view>
         <view class="arrow-icon">⌄</view>
         <view class="input-line"></view>
       </view>
       
-      <!-- 工号输入组 -->
+      <!-- 手机号输入组 -->
       <view class="input-group">
-        <view class="input-icon">👤</view>
+        <view class="input-icon">📱</view>
         <input 
           class="input" 
-          type="text" 
-          placeholder="姓名" 
+          type="number" 
+          placeholder="手机号" 
           placeholder-class="placeholder"
-          model:value="{{username}}"
-          bindfocus="onUsernameFocus"
-          bindblur="onUsernameBlur"
+          model:value="{{phone}}"
+          bindfocus="onPhoneFocus"
+          bindblur="onPhoneBlur"
           bindinput="onInputChange"
+          maxlength="11"
         />
         <view class="input-line"></view>
       </view>
@@ -89,18 +90,18 @@
   <!-- 版本信息 -->
   <view class="version">v1.0.0 · 教师专业发展平台</view>
 
-  <!-- 底部弹窗：校区选择 -->
+  <!-- 底部弹窗：学校选择 -->
   <view class="picker-overlay" wx:if="{{showCampusPicker}}" bindtap="hideCampusPicker">
     <view class="picker-modal" catchtap="stopPropagation">
       <view class="picker-header">
         <text class="picker-action" bindtap="hideCampusPicker">取消</text>
-        <text class="picker-title">选择校区</text>
+        <text class="picker-title">选择学校</text>
         <text class="picker-action confirm" bindtap="confirmCampusPicker">确定</text>
       </view>
       <picker-view class="picker-view" indicator-style="height: 60rpx" value="{{[campusIndex]}}" bindchange="onPickerViewChange">
         <picker-view-column>
           <view class="picker-item" wx:for="{{campusList}}" wx:key="id">
-            {{item.name}}
+            {{item.campusName || item.name}}
           </view>
         </picker-view-column>
       </picker-view>
