@@ -92,9 +92,39 @@ Page({
     const level = e.currentTarget.dataset.level;
     const score = e.currentTarget.dataset.score;
     const id = e.currentTarget.dataset.id;
-    this.data.currentLevel[id]={
-      "name":level,
-      "score":score
+    // 使用setData更新，确保视图响应
+    const currentLevel = this.data.currentLevel || {};
+    currentLevel[id] = {
+      "name": level,
+      "score": score
+    };
+    this.setData({
+      currentLevel: currentLevel
+    });
+  },
+
+  // 检查所有考核等级是否已选择
+  checkAllLevelsSelected() {
+    const { contents } = this.data;
+    const unselectedItems = [];
+    
+    // 遍历所有标签页的内容
+    for (const tabContents of contents) {
+      if (Array.isArray(tabContents)) {
+        for (const item of tabContents) {
+          // 只检查需要选择等级的项目（type != 'count'）
+          if (item.data && item.data.type !== 'count') {
+            if (!this.data.currentLevel || !this.data.currentLevel[item.id] || !this.data.currentLevel[item.id].name) {
+              unselectedItems.push(item.title || `项目${item.id}`);
+            }
+          }
+        }
+      }
+    }
+    
+    return {
+      allSelected: unselectedItems.length === 0,
+      unselectedItems: unselectedItems
     };
   },
 
@@ -261,6 +291,17 @@ Page({
 
   // 提交评价
   submitEvaluation() {
+    // 检查所有考核等级是否已选择
+    const checkResult = this.checkAllLevelsSelected();
+    if (!checkResult.allSelected) {
+      wx.showToast({
+        title: '请先完成所有考核等级的选择',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+
     wx.showModal({
       title: '提交确认',
       content: '确定要提交评价结果吗？',
@@ -274,6 +315,17 @@ Page({
 
   //提交审核
   submitAudit(){
+    // 检查所有考核等级是否已选择
+    const checkResult = this.checkAllLevelsSelected();
+    if (!checkResult.allSelected) {
+      wx.showToast({
+        title: '请先完成所有考核等级的选择',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+
     wx.showModal({
       title: '提交确认',
       content: '确定要提交评价结果进行审核吗？',

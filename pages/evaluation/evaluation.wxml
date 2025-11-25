@@ -39,7 +39,7 @@
       <view class="scoring-area-rad" wx:if="{{item.data.type!='count'}}">
           <text class="score-label-rad">考核等级：</text>
           <view class="radio-controls-rad" wx:for="{{item.data.data}}" wx:for-item="value">
-            <view class="radio-option {{currentLevel === 'A' ? 'selected' : ''}}" bindtap="selectLevel"  data-id="{{item.id}}" data-level="{{value.name}}" data-score="{{value.score}}">
+            <view class="radio-option {{currentLevel[item.id] && currentLevel[item.id].name === value.name ? 'selected' : ''}}" bindtap="selectLevel"  data-id="{{item.id}}" data-level="{{value.name}}" data-score="{{value.score}}">
               <text class="radio-text">{{value.name}}</text>
             </view>
           </view>
