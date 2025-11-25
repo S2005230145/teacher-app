@@ -9,7 +9,7 @@ Page({
       { id: 3, name: '学生指导' },
       { id: 4, name: '效果' }
     ],
-    currentTab: 3, // 默认选中"效果"
+    currentTab: 0, // 默认选中第1个标签
     
     // 评价内容数据
     contents: [
@@ -19,13 +19,15 @@ Page({
           id: 101, 
           title: '教学内容充实', 
           description: '教学内容充实、教学方法得当、课堂互动良好、学生参与度高',
-          time: 0 
+          time: 0,
+          files: []
         },
         { 
           id: 102, 
           title: '教学方法得当', 
           description: '采用多样化教学方法，激发学生学习兴趣',
-          time: 0 
+          time: 0,
+          files: []
         }
       ],
       // 科研成果
@@ -34,7 +36,8 @@ Page({
           id: 201, 
           title: '论文发表', 
           description: '学术论文发表数量和质量',
-          time: 0 
+          time: 0,
+          files: []
         }
       ],
       // 学生指导
@@ -43,7 +46,8 @@ Page({
           id: 301, 
           title: '学业指导', 
           description: '学生学业指导和辅导情况',
-          time: 0 
+          time: 0,
+          files: []
         }
       ],
       // 效果
@@ -52,13 +56,15 @@ Page({
           id: 401, 
           title: '教学内容充实', 
           description: '教学内容充实、教学方法得当、课堂互动良好、学生参与度高',
-          time: 0 
+          time: 0,
+          files: []
         },
         { 
           id: 402, 
           title: '教学方法得当', 
           description: '采用多样化教学方法，激发学生学习兴趣',
-          time: 0 
+          time: 0,
+          files: []
         }
       ]
     ],
@@ -69,14 +75,17 @@ Page({
     currentElement:0,
     userInfo:{},
     currentLevel:{},
-    canSubmit: false, // 是否可以提交
+    canSubmit: false, // 初始锁定提交按钮
     levels: [
       { value: 'A', label: 'A (优秀)', score: 90 },
       { value: 'B', label: 'B (良好)', score: 80 },
       { value: 'C', label: 'C (合格)', score: 70 },
       { value: 'D', label: 'D (不合格)', score: 60 }
     ],
-    gradeData:{}
+    gradeData:{},
+    drawerOpen:false,
+    drawerWidth:520,
+    maxFilesPerItem:5
   },
 
   onLoad(options) {
@@ -107,35 +116,31 @@ Page({
   },
 
   // 检查所有考核等级是否已选择
-  checkAllLevelsSelected() {
-    const { contents } = this.data;
-    const unselectedItems = [];
-    
-    // 遍历所有标签页的内容
-    for (const tabContents of contents) {
-      if (Array.isArray(tabContents)) {
-        for (const item of tabContents) {
-          // 只检查需要选择等级的项目（type != 'count'）
-          if (item.data && item.data.type !== 'count') {
-            if (!this.data.currentLevel || !this.data.currentLevel[item.id] || !this.data.currentLevel[item.id].name) {
-              unselectedItems.push(item.title || `项目${item.id}`);
-            }
-          }
-        }
-      }
+  // 检查当前页是否至少完成一次选择/计数
+  hasEvaluationAction() {
+    const { contents = [], currentLevel = {}, currentTab = 0 } = this.data;
+    const currentTabItems = Array.isArray(contents[currentTab]) ? contents[currentTab] : [];
+    if (!currentTabItems.length) {
+      return false;
     }
-    
-    return {
-      allSelected: unselectedItems.length === 0,
-      unselectedItems: unselectedItems
-    };
+    const hasLevel = currentTabItems.some(item => {
+      const level = currentLevel[item.id];
+      return level && level.name;
+    });
+    if (hasLevel) {
+      return true;
+    }
+    const hasCount = currentTabItems.some(item => {
+      const itemData = item?.data || {};
+      return itemData.type === 'count' && Number(item.time || 0) > 0;
+    });
+    return hasCount;
   },
 
-  // 更新按钮状态
+  // 更新按钮状态：至少有一项操作时才可提交
   updateButtonState() {
-    const checkResult = this.checkAllLevelsSelected();
     this.setData({
-      canSubmit: checkResult.allSelected
+      canSubmit: this.hasEvaluationAction()
     });
   },
 
@@ -150,14 +155,47 @@ Page({
         'userId':this.data.userInfo.id
       });
       console.log(valueTest)
-      valueTest.contents.forEach(value=>{
-        value.forEach(v1=>{
-          v1.data=JSON.parse(v1.data);
+      const formattedContentsRaw = valueTest.contents || [];
+      const normalizedContents = formattedContentsRaw.map(list => {
+        if (!Array.isArray(list)) {
+          return [];
+        }
+        return list.map(entry => {
+          const clone = { ...entry };
+          if (clone.data && typeof clone.data === 'string') {
+            try {
+              clone.data = JSON.parse(clone.data);
+            } catch (err) {
+              console.warn('解析 data 失败:', err, clone);
+              clone.data = {};
+            }
+          }
+          const initialFiles = Array.isArray(clone.files) ? clone.files : [];
+          const hasLegacyFile = clone.filePath;
+          const normalizedFiles = hasLegacyFile ? [{
+            name: clone.fileName || '',
+            path: clone.filePath,
+            status: clone.uploadStatus || '',
+            error: clone.uploadError || '',
+            description: clone.uploadDesc || ''
+          }] : initialFiles;
+          clone.files = normalizedFiles.map(file => ({
+            name: file.name || '',
+            path: file.path || '',
+            status: file.status || '',
+            error: file.error || '',
+            description: file.description || ''
+          }));
+          delete clone.fileName;
+          delete clone.filePath;
+          delete clone.uploadStatus;
+          delete clone.uploadError;
+          return clone;
         });
-      })
-      const formattedContents = valueTest.contents || [];
+      });
       const formatTabs = valueTest.tabs || [];
-      const currentTab = formattedContents[this.data.currentTab] ? this.data.currentTab : 0;
+      const defaultTab = 0;
+      const currentTab = normalizedContents[defaultTab] ? defaultTab : 0;
       const currentTabInfo = formatTabs[currentTab] || null;
       console.log('当前页签信息:', currentTabInfo);
       if (currentTabInfo && Object.prototype.hasOwnProperty.call(currentTabInfo, 'robotScore')) {
@@ -165,9 +203,9 @@ Page({
       }
       this.setData({
         tabs: formatTabs,
-        contents:formattedContents,
+        contents: normalizedContents,
         currentTab,
-        currentContents: formattedContents[currentTab] || [],
+        currentContents: normalizedContents[currentTab] || [],
         currentElement: currentTabInfo
       });
       // 初始化按钮状态
@@ -175,6 +213,64 @@ Page({
     }catch(e){
       console.error(e);
     }
+  },
+
+  openDrawer() {
+    if (this.data.drawerOpen) {
+      return;
+    }
+    this.setData({
+      drawerOpen: true
+    });
+  },
+
+  closeDrawer() {
+    if (!this.data.drawerOpen) {
+      return;
+    }
+    this.setData({
+      drawerOpen: false
+    });
+  },
+
+  onTouchStart(e) {
+    if (!e.touches || !e.touches.length) {
+      return;
+    }
+    const touch = e.touches[0];
+    this.touchContext = {
+      startX: touch.pageX,
+      startY: touch.pageY,
+      fromEdge: touch.pageX <= 40,
+      fromDrawer: this.data.drawerOpen && touch.pageX <= (this.data.drawerWidth + 40),
+      deltaX: 0,
+      deltaY: 0
+    };
+  },
+
+  onTouchMove(e) {
+    if (!this.touchContext || !e.touches || !e.touches.length) {
+      return;
+    }
+    const touch = e.touches[0];
+    this.touchContext.deltaX = touch.pageX - this.touchContext.startX;
+    this.touchContext.deltaY = touch.pageY - this.touchContext.startY;
+  },
+
+  onTouchEnd() {
+    if (!this.touchContext) {
+      return;
+    }
+    const { deltaX = 0, deltaY = 0, fromEdge, fromDrawer } = this.touchContext;
+    const isHorizontal = Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY);
+    if (isHorizontal) {
+      if (!this.data.drawerOpen && fromEdge && deltaX > 60) {
+        this.openDrawer();
+      } else if (this.data.drawerOpen && fromDrawer && deltaX < -60) {
+        this.closeDrawer();
+      }
+    }
+    this.touchContext = null;
   },
 
   formatContents(contents = []) {
@@ -225,6 +321,9 @@ Page({
       currentContents: this.data.contents[index],
       currentElement: this.data.tabs[index]
     });
+    if (this.data.drawerOpen) {
+      this.closeDrawer();
+    }
     // 更新按钮状态
     this.updateButtonState();
   },
@@ -281,6 +380,39 @@ Page({
       contents: updatedContents,
       currentContents: updatedContents[currentTab]
     });
+    this.updateButtonState();
+  },
+
+  appendFilesToItem(id, newFiles = []) {
+    const target = this.findItemById(id);
+    if (!target) {
+      return;
+    }
+    const existingFiles = Array.isArray(target.files) ? target.files : [];
+    const availableSlots = (this.data.maxFilesPerItem || 5) - existingFiles.length;
+    if (availableSlots <= 0) {
+      wx.showToast({
+        title: `最多上传${this.data.maxFilesPerItem}个文件`,
+        icon: 'none'
+      });
+      return;
+    }
+    const filesToAdd = newFiles.slice(0, availableSlots);
+    this.updateItemFields(id, { files: [...existingFiles, ...filesToAdd] });
+  },
+
+  updateFileStatus(itemId, fileIndex, patch = {}) {
+    const target = this.findItemById(itemId);
+    if (!target || !Array.isArray(target.files)) {
+      return;
+    }
+    const nextFiles = target.files.map((file, idx) => {
+      if (idx === fileIndex) {
+        return { ...file, ...patch };
+      }
+      return file;
+    });
+    this.updateItemFields(itemId, { files: nextFiles });
   },
 
   onDescInput(e) {
@@ -313,17 +445,6 @@ Page({
 
   // 提交评价
   submitEvaluation() {
-    // 检查所有考核等级是否已选择
-    const checkResult = this.checkAllLevelsSelected();
-    if (!checkResult.allSelected) {
-      wx.showToast({
-        title: '请先完成所有考核等级的选择',
-        icon: 'none',
-        duration: 2000
-      });
-      return;
-    }
-
     wx.showModal({
       title: '提交确认',
       content: '确定要提交评价结果吗？',
@@ -337,17 +458,6 @@ Page({
 
   //提交审核
   submitAudit(){
-    // 检查所有考核等级是否已选择
-    const checkResult = this.checkAllLevelsSelected();
-    if (!checkResult.allSelected) {
-      wx.showToast({
-        title: '请先完成所有考核等级的选择',
-        icon: 'none',
-        duration: 2000
-      });
-      return;
-    }
-
     wx.showModal({
       title: '提交确认',
       content: '确定要提交评价结果进行审核吗？',
@@ -370,7 +480,7 @@ Page({
           "time": value.time != null ? value.time : 0,
           "type":jsonObject.type,
           // TODO 小程序动态
-          "var":this.data.currentLevel[value.id]
+          "var": (this.data.currentLevel && this.data.currentLevel[value.id]) ? this.data.currentLevel[value.id] : null
         };
 
         console.log(item);
@@ -460,30 +570,86 @@ Page({
     if (!id) {
       return;
     }
+    const target = this.findItemById(id);
+    const existing = Array.isArray(target?.files) ? target.files.length : 0;
+    const maxFiles = this.data.maxFilesPerItem || 5;
+    const remain = maxFiles - existing;
+    if (remain <= 0) {
+      wx.showToast({
+        title: `最多上传${maxFiles}个文件`,
+        icon: 'none'
+      });
+      return;
+    }
     wx.chooseMessageFile({
-      count: 1,
+      count: remain,
       type: 'file',
       success: (res) => {
-        const file = res.tempFiles?.[0];
-        if (!file) return;
-        this.updateItemFields(id, {
-          fileName: file.name,
-          filePath: file.path,
-          uploadStatus: 'pending',
-          uploadError: ''
-        });
+        const files = res.tempFiles || [];
+        if (!files.length) return;
+        const normalized = files.map(file => ({
+          name: file.name || '文件',
+          path: file.path,
+          status: 'pending',
+          error: '',
+          description: ''
+        }));
+        this.appendFilesToItem(id, normalized);
       }
     });
   },
 
   removeFile(e) {
-    console.log(e);
     const id = e.currentTarget.dataset.id;
-    this.updateItemFields(id, {
-      fileName: '',
-      filePath: '',
-      uploadStatus: '',
-      uploadError: ''
+    const index = e.currentTarget.dataset.index;
+    if (id == null || index == null) {
+      return;
+    }
+    const target = this.findItemById(id);
+    if (!target || !Array.isArray(target.files)) {
+      return;
+    }
+    const nextFiles = target.files.filter((_, idx) => idx !== Number(index));
+    this.updateItemFields(id, { files: nextFiles });
+  },
+
+  previewFile(e) {
+    const id = e.currentTarget.dataset.id;
+    const index = e.currentTarget.dataset.index;
+    if (id == null || index == null) {
+      return;
+    }
+    const target = this.findItemById(id);
+    if (!target || !Array.isArray(target.files)) {
+      return;
+    }
+    const file = target.files[index];
+    if (!file || !file.path) {
+      wx.showToast({
+        title: '暂无可预览文件',
+        icon: 'none'
+      });
+      return;
+    }
+    const path = file.path;
+    const name = file.name || '';
+    const isImage = /\.(png|jpg|jpeg|bmp|gif|webp)$/i.test(name) || /\.(png|jpg|jpeg|bmp|gif|webp)$/i.test(path);
+    if (isImage) {
+      wx.previewImage({
+        current: path,
+        urls: [path]
+      });
+      return;
+    }
+    wx.openDocument({
+      filePath: path,
+      showMenu: true,
+      fail: () => {
+        wx.showToast({
+          title: '无法预览该文件',
+          icon: 'none'
+        });
+      }
     });
   },
 
@@ -495,9 +661,17 @@ Page({
     const filesToUpload = [];
     contents.forEach(tabContents => {
       tabContents.forEach(item => {
-        if (item.filePath && item.uploadStatus !== 'uploaded') {
-          filesToUpload.push(item);
-        }
+        const fileList = Array.isArray(item.files) ? item.files : [];
+        fileList.forEach((file, index) => {
+          if (file.path && file.status !== 'uploaded') {
+            filesToUpload.push({
+              itemId: item.id,
+              fileIndex: index,
+              file,
+              description: item.uploadDesc || ''
+            });
+          }
+        });
       });
     });
 
@@ -512,24 +686,24 @@ Page({
 
     try {
       for (const fileItem of filesToUpload) {
-        this.updateItemFields(fileItem.id, { uploadStatus: 'uploading', uploadError: '' });
+        this.updateFileStatus(fileItem.itemId, fileItem.fileIndex, { status: 'uploading', error: '' });
         try {
           const res = await apiService.uploadEvaluationFile({
-            filePath: fileItem.filePath,
-            description: fileItem.uploadDesc || '',
-            contentId: fileItem.id,
+            filePath: fileItem.file.path,
+            description: fileItem.description || '',
+            contentId: fileItem.itemId,
             userId: userInfo.id
           });
           if (res.code === 200) {
-            this.updateItemFields(fileItem.id, { uploadStatus: 'uploaded' });
+            this.updateFileStatus(fileItem.itemId, fileItem.fileIndex, { status: 'uploaded' });
           } else {
             const reason = res.reason || '上传失败，请重试';
-            this.updateItemFields(fileItem.id, { uploadStatus: 'failed', uploadError: reason });
+            this.updateFileStatus(fileItem.itemId, fileItem.fileIndex, { status: 'failed', error: reason });
             throw new Error(reason);
           }
         } catch (error) {
           const message = error?.message || '上传失败，请重试';
-          this.updateItemFields(fileItem.id, { uploadStatus: 'failed', uploadError: message });
+          this.updateFileStatus(fileItem.itemId, fileItem.fileIndex, { status: 'failed', error: message });
           throw error;
         }
       }

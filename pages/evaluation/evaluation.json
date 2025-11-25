@@ -2,6 +2,6 @@
   "usingComponents": {},
   "navigationBarTitleText": "次数评分评测",
   "enablePullDownRefresh": false,
-  "navigationBarBackgroundColor": "#8B5FBF",
+  "navigationBarBackgroundColor": "#60A5FA",
   "navigationBarTextStyle": "white"
 }

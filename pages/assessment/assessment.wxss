@@ -11,7 +11,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 60rpx 0 40rpx;
-  background: linear-gradient(135deg, #8B5FBF 0%, #6A3093 100%);
+  background: linear-gradient(135deg, #60A5FA 0%, #3D8BF7 100%);
   margin: 0 -30rpx;
   padding-left: 30rpx;
   padding-right: 30rpx;
@@ -61,7 +61,7 @@
   border-radius: 20rpx;
   padding: 40rpx;
   margin-top: -30rpx;
-  box-shadow: 0 10rpx 30rpx rgba(139, 95, 191, 0.1);
+  box-shadow: 0 12rpx 32rpx rgba(96, 165, 250, 0.18);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -89,7 +89,7 @@
 .stat-value {
   font-size: 48rpx;
   font-weight: bold;
-  color: #8B5FBF;
+  color: #60A5FA;
   margin-bottom: 10rpx;
 }
 
@@ -166,7 +166,7 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #8B5FBF, #6A3093);
+  background: linear-gradient(90deg, #60A5FA, #3D8BF7);
   border-radius: 4rpx;
   transition: width 0.3s;
 }

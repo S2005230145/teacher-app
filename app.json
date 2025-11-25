@@ -12,7 +12,7 @@
   ],
   "tabBar": {
     "color": "#999999",
-    "selectedColor": "#8B5FBF",
+    "selectedColor": "#60A5FA",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "position": "bottom",
@@ -45,7 +45,7 @@
   },
   "window": {
     "navigationBarTitleText": "教师考核系统",
-    "navigationBarBackgroundColor": "#8B5FBF",
+    "navigationBarBackgroundColor": "#60A5FA",
     "navigationBarTextStyle": "white"
   },
   "style": "v2",

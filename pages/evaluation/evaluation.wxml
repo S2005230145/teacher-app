@@ -1,90 +1,118 @@
 <!-- pages/evaluation/evaluation.wxml -->
-<view class="container" style="background-color: white;">
+<view class="drawer-layout"
+      bindtouchstart="onTouchStart"
+      bindtouchmove="onTouchMove"
+      bindtouchend="onTouchEnd">
 
-  <!-- 评价要素标签 - 双向绑定 -->
-  <scroll-view class="tabs-scroll" scroll-x>
-    <view class="tabs" style="width: 100%;">
-      <view wx:for="{{tabs}}" wx:key="id" 
-          class="tab {{currentTab === index ? 'active' : ''}}"
-          bindtap="switchTab" data-index="{{index}}">
-        <text class="tab-text">{{item.name != null?item.name:''}}</text>
-      </view>
+  <!-- 左侧抽屉 -->
+  <view class="drawer-panel {{drawerOpen ? 'open' : ''}}">
+    <view class="drawer-header">
+      <text class="drawer-title">评价要素</text>
+      <button class="drawer-close" bindtap="closeDrawer">收起</button>
     </view>
-  </scroll-view>
-
-  <!-- 当前页评分信息 -->
-  <view class="score-banner" style="width:100%" wx:if="{{currentElement && currentElement.robotScore != null}}">
-    <view class="score-banner__track">
-      <text class="score-banner__label">当前评测页评分</text>
-      <text class="score-banner__value">{{currentElement.robotScore}}</text>
-    </view>
-  </view>
-
-  
-  <!-- 评价内容区域 - 双向绑定 -->
-  <scroll-view class="content" scroll-y style="margin-bottom:210rpx;">
-    <view wx:for="{{currentContents}}" wx:key="id" class="evaluation-item">
-      <view class="item-header">
-        <text class="item-title">{{item.title}}</text>
-        <icon type="info" size="32"
-              class="info-icon"
-              data-title="{{item.title}}"
-              data-desc="{{item.description}}"
-              bindtap="showDescription" />
-      </view>
-
-      <!-- 选择器类型 -->
-      <!-- 普通类型 - 完成次数 -->
-      <view class="scoring-area" wx:if="{{item.data.type=='count'}}">
-        <text class="score-label">完成次数：</text>
-        <view class="score-controls">
-          <button class="score-btn minus" bindtap="decreaseScore" data-id="{{item.id}}">-</button>
-          <input class="score-input" type="number" value="{{item.time}}" 
-                 bindinput="onScoreInput" data-id="{{item.id}}" placeholder="0"/>
-          <button class="score-btn plus" bindtap="increaseScore" data-id="{{item.id}}">+</button>
+    <scroll-view class="drawer-scroll" scroll-y>
+      <view class="drawer-tabs">
+        <view wx:for="{{tabs}}" wx:key="id"
+              class="drawer-tab {{currentTab === index ? 'active' : ''}}"
+              bindtap="switchTab"
+              data-index="{{index}}">
+          <text class="drawer-tab__text">{{item.name != null ? item.name : ''}}</text>
+          <text class="drawer-tab__score" wx:if="{{item.robotScore != null}}">
+            {{item.robotScore}}
+          </text>
         </view>
       </view>
+    </scroll-view>
+  </view>
 
-      <view class="scoring-area-rad" wx:if="{{item.data.type!='count'}}">
-          <text class="score-label-rad">考核等级：</text>
-          <view class="radio-controls-rad" wx:for="{{item.data.data}}" wx:for-item="value" wx:key="name">
-            <view class="radio-option {{currentLevel[item.id] && currentLevel[item.id].name === value.name ? 'selected' : ''}}" bindtap="selectLevel"  data-id="{{item.id}}" data-level="{{value.name}}" data-score="{{value.score}}">
-              <text class="radio-text">{{value.name}}</text>
-            </view>
-          </view>
+  <!-- 遮罩 -->
+  <view class="drawer-overlay {{drawerOpen ? 'visible' : ''}}" bindtap="closeDrawer"></view>
+
+  <view class="container main-content {{drawerOpen ? 'shifted' : ''}}" style="background-color: white;">
+    <view class="drawer-trigger" bindtap="openDrawer">
+      <text class="trigger-icon">|||</text>
+      <text class="trigger-text">评价要素</text>
+    </view>
+
+    <!-- 当前页评分信息 -->
+    <view class="score-banner" style="width:100%" wx:if="{{currentElement && currentElement.robotScore != null}}">
+      <view class="score-banner__track">
+        <text class="score-banner__label">当前评测页评分</text>
+        <text class="score-banner__value">{{currentElement.robotScore}}</text>
       </view>
+    </view>
 
-      <view class="upload-section">
-        <view class="desc-wrapper">
-          <textarea class="desc-input"
-                    placeholder="请输入材料说明（选填，最多200字）"
-                    maxlength="200"
-                    auto-height
-                    value="{{item.uploadDesc}}"
-                    data-id="{{item.id}}"
-                    bindinput="onDescInput"></textarea>
-        </view>  
+    <!-- 评价内容区域 - 双向绑定 -->
+    <scroll-view class="content" scroll-y style="margin-bottom:210rpx;">
+      <view wx:for="{{currentContents}}" wx:key="id" class="evaluation-item">
+        <view class="item-header">
+          <text class="item-title">{{item.title}}</text>
+          <icon type="info" size="32"
+                class="info-icon"
+                data-title="{{item.title}}"
+                data-desc="{{item.description}}"
+                bindtap="showDescription" />
+        </view>
+
+        <!-- 选择器类型 -->
+        <!-- 普通类型 - 完成次数 -->
+        <view class="scoring-area" wx:if="{{item.data.type=='count'}}">
+          <text class="score-label">完成次数：</text>
+          <view class="score-controls">
+            <button class="score-btn minus" bindtap="decreaseScore" data-id="{{item.id}}">-</button>
+            <input class="score-input" type="number" value="{{item.time}}"
+                   bindinput="onScoreInput" data-id="{{item.id}}" placeholder="0"/>
+            <button class="score-btn plus" bindtap="increaseScore" data-id="{{item.id}}">+</button>
+          </view>
+        </view>
+
+        <view class="scoring-area-rad" wx:if="{{item.data.type!='count'}}">
+            <text class="score-label-rad">考核等级：</text>
+            <view class="radio-controls-rad" wx:for="{{item.data.data}}" wx:for-item="value" wx:key="name">
+              <view class="radio-option {{currentLevel[item.id] && currentLevel[item.id].name === value.name ? 'selected' : ''}}" bindtap="selectLevel"  data-id="{{item.id}}" data-level="{{value.name}}" data-score="{{value.score}}">
+                <text class="radio-text">{{value.name}}</text>
+              </view>
+            </view>
+        </view>
+
+        <view class="upload-section">
+          <view class="desc-wrapper">
+            <textarea class="desc-input"
+                      placeholder="请输入材料说明（选填，最多200字）"
+                      maxlength="200"
+                      auto-height
+                      value="{{item.uploadDesc}}"
+                      data-id="{{item.id}}"
+                      bindinput="onDescInput"></textarea>
+          </view>
 
         <view class="file-row">
           <button class="file-btn" bindtap="chooseFile" data-id="{{item.id}}">上传文件</button>
-          <text class="file-name">{{item.fileName || '暂未选择文件'}}</text>
-          <button class="link-btn" wx:if="{{item.filePath}}" bindtap="removeFile" data-id="{{item.id}}">撤销当前文件</button>
+          <text class="file-limit">已选 {{(item.files && item.files.length) || 0}} / {{maxFilesPerItem}}</text>
         </view>
 
-        <view class="status-row" wx:if="{{item.uploadStatus}}">
-          <text class="status-tag uploading" wx:if="{{item.uploadStatus === 'uploading'}}">上传中...</text>
-          <text class="status-tag pending" wx:elif="{{item.uploadStatus === 'pending'}}">已选择，等待提交时上传</text>
-          <text class="status-tag success" wx:elif="{{item.uploadStatus === 'uploaded'}}">已上传</text>
-          <text class="status-tag error" wx:elif="{{item.uploadStatus === 'failed'}}">{{item.uploadError || '上传失败，请重试'}}</text>
+        <view class="files-list" wx:if="{{item.files && item.files.length}}">
+          <view class="file-entry" wx:for="{{item.files}}" wx:key="index" wx:for-item="file">
+            <text class="file-name">{{file.name}}</text>
+            <view class="file-entry__meta">
+              <text class="status-tag uploading" wx:if="{{file.status === 'uploading'}}">上传中...</text>
+              <text class="status-tag pending" wx:elif="{{file.status === 'pending'}}">待上传</text>
+              <text class="status-tag success" wx:elif="{{file.status === 'uploaded'}}">已上传</text>
+              <text class="status-tag error" wx:elif="{{file.status === 'failed'}}">{{file.error || '上传失败'}}</text>
+              <button class="link-btn" bindtap="previewFile" data-id="{{item.id}}" data-index="{{index}}">预览</button>
+              <button class="link-btn" bindtap="removeFile" data-id="{{item.id}}" data-index="{{index}}">删除</button>
+            </view>
+          </view>
         </view>
+        </view>
+          </view>
+        </scroll-view>
+
+    <!-- 底部按钮 -->
+    <view class="footer">
+        <button class="btn submit-btn {{canSubmit ? '' : 'disabled'}}" bindtap="submitEvaluation" disabled="{{!canSubmit}}">提交评价</button>
+        <button class="btn audit-btn {{canSubmit ? '' : 'disabled'}}" bindtap="submitAudit" disabled="{{!canSubmit}}">提交审核</button>
+        <button class="btn back-btn" bindtap="navigateBack">返回</button>
       </view>
-        </view>
-      </scroll-view>
-
-  <!-- 底部按钮 -->
-  <view class="footer">
-      <button class="btn submit-btn {{canSubmit ? '' : 'disabled'}}" bindtap="submitEvaluation" disabled="{{!canSubmit}}">提交评价</button>
-      <button class="btn audit-btn {{canSubmit ? '' : 'disabled'}}" bindtap="submitAudit" disabled="{{!canSubmit}}">提交审核</button>
-      <button class="btn back-btn" bindtap="navigateBack">返回</button>
-    </view>
+  </view>
 </view>
