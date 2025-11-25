@@ -68,7 +68,13 @@ Page({
     elements:[],
     currentElement:0,
     userInfo:{},
-
+    currentLevel:{},
+    levels: [
+      { value: 'A', label: 'A (优秀)', score: 90 },
+      { value: 'B', label: 'B (良好)', score: 80 },
+      { value: 'C', label: 'C (合格)', score: 70 },
+      { value: 'D', label: 'D (不合格)', score: 60 }
+    ],
     gradeData:{}
   },
 
@@ -77,15 +83,23 @@ Page({
       userInfo:wx.getStorageSync('userInfo') || {},
       indicatorId:options.indicatorId
     })
-    
     // 初始化显示"效果"标签的内容
     this.loadEvaluationList();
   },
 
+  // 选择等级
+  selectLevel(e) {
+    const level = e.currentTarget.dataset.level;
+    const score = e.currentTarget.dataset.score;
+    const id = e.currentTarget.dataset.id;
+    this.data.currentLevel[id]={
+      "name":level,
+      "score":score
+    };
+  },
+
   async loadEvaluationList(){
     try{
-      console.log(this.data.indicatorId)
-      console.log(this.data.userInfo.id)
       const value=await apiService.getEvaluationList({
         'indicatorId':this.data.indicatorId,
         'userId':this.data.userInfo.id
@@ -94,8 +108,12 @@ Page({
         'indicatorId':this.data.indicatorId,
         'userId':this.data.userInfo.id
       });
-      console.log(valueTest.contents)
-      const formattedContents = this.formatContents(valueTest.contents || []);
+      valueTest.contents.forEach(value=>{
+        value.forEach(v1=>{
+          v1.data=JSON.parse(v1.data);
+        });
+      })
+      const formattedContents = valueTest.contents;
       const currentTab = formattedContents[this.data.currentTab] ? this.data.currentTab : 0;
       this.setData({
         tabs:value.tabs,
@@ -272,19 +290,14 @@ Page({
       await this.uploadAllFiles();
       let tcs = [];
       this.data.currentContents.forEach(value=>{
+        const jsonObject = JSON.parse(value.type.jsonParam);
         const item = {
           "contentId": value.id,
           "time": value.time != null ? value.time : 0,
+          "type":jsonObject.type,
+          // TODO 小程序动态
+          "var":this.data.currentLevel[value.id]
         };
-
-        // 如果是 select 类型，添加 type 和 var 字段
-        if (value.jsonParamType === 'select' && value.selectedData) {
-          item.type = "select";
-          item.var = {
-            name: value.selectedData.name,
-            score: value.selectedData.score
-          };
-        }
 
         console.log(item);
         

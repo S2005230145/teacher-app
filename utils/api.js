@@ -89,7 +89,7 @@ class ApiService {
   }
 
   grade(data){
-    return this.request("/tk/grade/",{
+    return this.request("/tk/grade/new/",{
       method: 'POST',
       data:data
     });
