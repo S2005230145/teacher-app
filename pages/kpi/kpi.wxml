@@ -93,7 +93,7 @@
               <view class="metric">
                 <text class="metric-label">当前值:</text>
                 <text class="metric-value {{item.currentValue >= item.targetValue ? 'achieved' : 'not-achieved'}}">
-                  {{item.currentValue}}
+                  {{item.currentValue != null? item.score:0  }}
                 </text>
               </view>
             </view>
@@ -110,8 +110,8 @@
             
             <view class="score-section">
               <text class="score-label">得分:</text>
-              <text class="score-value">{{item.score}}分</text>
-              <text class="score-max">/ {{item.maxScore}}分</text>
+              <text class="score-value">{{item.score != null? item.score:0}}分</text>
+              <text class="score-max">/ {{item.maxScore!= null? item.score:100}}分</text>
             </view>
           </view>
           

@@ -138,9 +138,9 @@
   border-radius: 10rpx;
 }
 
-.item-score.excellent { background: #e8f5e8; color: #4CAF50; }
-.item-score.good { background: #e3f2fd; color: #2196F3; }
-.item-score.average { background: #fff3e0; color: #FF9800; }
+.item-score.excellent { background: #e8fef8; color: #00BFA5; } /* 冷青绿色 */
+.item-score.good { background: #e3f2fd; color: #2196F3; } /* 蓝色 */
+.item-score.average { background: #e8eaf6; color: #3F51B5; } /* 冷紫色 */
 
 .item-desc {
   font-size: 28rpx;
@@ -193,9 +193,9 @@
   border-radius: 8rpx;
 }
 
-.item-status.completed { background: #e8f5e8; color: #4CAF50; }
-.item-status.in-progress { background: #e3f2fd; color: #2196F3; }
-.item-status.pending { background: #fff3e0; color: #FF9800; }
+.item-status.completed { background: #e8fef8; color: #00BFA5; } /* 冷青绿色 */
+.item-status.in-progress { background: #e3f2fd; color: #2196F3; } /* 蓝色 */
+.item-status.pending { background: #e8eaf6; color: #3F51B5; } /* 冷紫色 */
 
 /* 功能菜单 */
 .menu-grid {

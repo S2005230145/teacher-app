@@ -1,5 +1,32 @@
 // pages/evaluation/evaluation.js
 import apiService from '../../utils/api.js';
+const REMOTE_FILE_BASE_URL = 'http://120.48.81.209/';
+
+function buildRemoteFileUrl(rawPath = '') {
+  if (!rawPath) {
+    return '';
+  }
+  if (/^https?:/i.test(rawPath)) {
+    return rawPath;
+  }
+  const base = REMOTE_FILE_BASE_URL.replace(/\/+$/, '');
+  const path = String(rawPath).replace(/^\/+/, '');
+  return `${base}/${path}`;
+}
+
+// 移除 URL 前缀，返回原始路径
+function removeUrlPrefix(fullUrl = '') {
+  if (!fullUrl) {
+    return '';
+  }
+  // 如果是完整的 URL，移除前缀
+  if (/^https?:/i.test(fullUrl)) {
+    const base = REMOTE_FILE_BASE_URL.replace(/\/+$/, '');
+    return String(fullUrl).replace(base, '').replace(/^\/+/, '');
+  }
+  // 如果已经是相对路径，直接返回
+  return String(fullUrl).replace(/^\/+/, '');
+}
 Page({
   data: {
     // 标签数据
@@ -76,6 +103,8 @@ Page({
     userInfo:{},
     currentLevel:{},
     canSubmit: false, // 初始锁定提交按钮
+    auditEnabled: false,
+    lastSubmitTimestamp: null,
     levels: [
       { value: 'A', label: 'A (优秀)', score: 90 },
       { value: 'B', label: 'B (良好)', score: 80 },
@@ -99,6 +128,11 @@ Page({
 
   // 选择等级
   selectLevel(e) {
+    // 如果已完成或待审核，不允许操作
+    const currentElement = this.data.currentElement;
+    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+      return;
+    }
     const level = e.currentTarget.dataset.level;
     const score = e.currentTarget.dataset.score;
     const id = e.currentTarget.dataset.id;
@@ -108,6 +142,11 @@ Page({
       "name": level,
       "score": score
     };
+    // 如果有考核等级，完成次数默认为1
+    const currentItem = this.findItemById(id);
+    if (currentItem && (!currentItem.time || currentItem.time === 0)) {
+      this.updateScore(id, 1);
+    }
     this.setData({
       currentLevel: currentLevel
     });
@@ -115,32 +154,37 @@ Page({
     this.updateButtonState();
   },
 
-  // 检查所有考核等级是否已选择
-  // 检查当前页是否至少完成一次选择/计数
+  // 检查当前页是否至少完成一次
+  // 1. 没有考核等级的（count类型），完成次数至少1次
+  // 2. 有考核等级的（非count类型），需要选择考核等级
   hasEvaluationAction() {
     const { contents = [], currentLevel = {}, currentTab = 0 } = this.data;
     const currentTabItems = Array.isArray(contents[currentTab]) ? contents[currentTab] : [];
     if (!currentTabItems.length) {
       return false;
     }
-    const hasLevel = currentTabItems.some(item => {
+    // 检查是否有至少一项完成
+    return currentTabItems.some(item => {
+      const itemData = item?.data || {};
+      const itemType = itemData.type;
+      
+      // 没有考核等级的（count类型）：完成次数至少1次
+      if (itemType === 'count') {
+        return Number(item.time || 0) >= 1;
+      }
+      
+      // 有考核等级的（非count类型）：需要选择考核等级
       const level = currentLevel[item.id];
       return level && level.name;
     });
-    if (hasLevel) {
-      return true;
-    }
-    const hasCount = currentTabItems.some(item => {
-      const itemData = item?.data || {};
-      return itemData.type === 'count' && Number(item.time || 0) > 0;
-    });
-    return hasCount;
   },
 
   // 更新按钮状态：至少有一项操作时才可提交
   updateButtonState() {
+    const hasAction = this.hasEvaluationAction();
     this.setData({
-      canSubmit: this.hasEvaluationAction()
+      canSubmit: hasAction,
+      auditEnabled: hasAction && !!this.data.lastSubmitTimestamp
     });
   },
 
@@ -172,24 +216,57 @@ Page({
           }
           const initialFiles = Array.isArray(clone.files) ? clone.files : [];
           const hasLegacyFile = clone.filePath;
-          const normalizedFiles = hasLegacyFile ? [{
-            name: clone.fileName || '',
-            path: clone.filePath,
-            status: clone.uploadStatus || '',
-            error: clone.uploadError || '',
-            description: clone.uploadDesc || ''
-          }] : initialFiles;
-          clone.files = normalizedFiles.map(file => ({
-            name: file.name || '',
-            path: file.path || '',
-            status: file.status || '',
-            error: file.error || '',
-            description: file.description || ''
-          }));
+          let normalizedFiles = initialFiles;
+          
+          // 如果有历史文件路径，支持单个或多个文件路径（用逗号分隔）
+          if (hasLegacyFile) {
+            const filePaths = String(clone.filePath).split(',').map(path => path.trim()).filter(path => path);
+            if (filePaths.length > 0) {
+              // 如果有多个文件路径，为每个路径创建一个文件对象
+              normalizedFiles = filePaths.map((filePath, index) => {
+                // 如果有多个文件，尝试从 fileName 中提取对应的文件名
+                let fileName = clone.fileName || '';
+                if (filePaths.length > 1 && fileName) {
+                  // 如果 fileName 也包含逗号，按索引取对应的文件名
+                  const fileNames = String(fileName).split(',').map(name => name.trim());
+                  fileName = fileNames[index] || fileNames[0] || `文件${index + 1}`;
+                }
+                return {
+                  name: fileName || `文件${index + 1}`,
+                  path: buildRemoteFileUrl(filePath),
+                  status: clone.uploadStatus || 'uploaded',
+                  error: clone.uploadError || '',
+                  description: clone.uploadDesc || '',
+                  isRemote: true,
+                  originalPath: filePath // 保存原始路径（不带URL前缀）
+                };
+              });
+            }
+          }
+          clone.files = normalizedFiles.map(file => {
+            const isRemote = file.isRemote || (file.path && /^https?:/i.test(file.path));
+            const resolvedPath = isRemote ? buildRemoteFileUrl(file.path) : (file.path || '');
+            return {
+              name: file.name || '',
+              path: resolvedPath,
+              status: file.status || (isRemote ? 'uploaded' : ''),
+              error: file.error || '',
+              description: file.description || '',
+              isRemote,
+              originalPath: file.originalPath || (isRemote ? removeUrlPrefix(file.path) : '') // 保存原始路径
+            };
+          });
           delete clone.fileName;
           delete clone.filePath;
           delete clone.uploadStatus;
           delete clone.uploadError;
+          // 如果有考核等级（非count类型），完成次数默认为1
+          const itemType = clone.data?.type;
+          if (itemType && itemType !== 'count') {
+            if (!clone.time || clone.time === 0) {
+              clone.time = 1;
+            }
+          }
           return clone;
         });
       });
@@ -201,12 +278,31 @@ Page({
       if (currentTabInfo && Object.prototype.hasOwnProperty.call(currentTabInfo, 'robotScore')) {
         console.log('当前 robotScore:', currentTabInfo.robotScore);
       }
+      const restoredLevels = {};
+      normalizedContents.forEach(tabList => {
+        tabList.forEach(item => {
+        const preferScore = item.score ?? item.finalScore ?? null;
+        if (item.data && item.data.data && preferScore != null) {
+          const matched = item.data.data.find(option => Number(option.score) === Number(preferScore));
+          if (matched) {
+            restoredLevels[item.id] = {
+              name: matched.name,
+              score: matched.score
+            };
+          }
+        }
+        });
+      });
+
       this.setData({
         tabs: formatTabs,
         contents: normalizedContents,
         currentTab,
         currentContents: normalizedContents[currentTab] || [],
-        currentElement: currentTabInfo
+        currentElement: currentTabInfo,
+        currentLevel: restoredLevels,
+        auditEnabled: false,
+        lastSubmitTimestamp: null
       });
       // 初始化按钮状态
       this.updateButtonState();
@@ -319,8 +415,12 @@ Page({
     this.setData({
       currentTab: index,
       currentContents: this.data.contents[index],
-      currentElement: this.data.tabs[index]
+      currentElement: this.data.tabs[index],
+      auditEnabled: false,
+      lastSubmitTimestamp: null
     });
+    console.log(this.data.currentElement);
+
     if (this.data.drawerOpen) {
       this.closeDrawer();
     }
@@ -330,15 +430,36 @@ Page({
 
   // 分数输入
   onScoreInput(e) {
+    // 如果已完成或待审核，不允许操作
+    const currentElement = this.data.currentElement;
+    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+      return;
+    }
     const id = e.currentTarget.dataset.id;
+    const currentItem = this.findItemById(id);
+    // 如果有考核等级（非count类型），不允许修改完成次数
+    const itemData = currentItem?.data || {};
+    if (itemData.type && itemData.type !== 'count') {
+      return;
+    }
     const value = parseInt(e.detail.value) || 0;
     this.updateScore(id, value);
   },
 
   // 减少分数
   decreaseScore(e) {
+    // 如果已完成或待审核，不允许操作
+    const currentElement = this.data.currentElement;
+    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+      return;
+    }
     const id = e.currentTarget.dataset.id;
     const currentItem = this.findItemById(id);
+    // 如果有考核等级（非count类型），不允许修改完成次数
+    const itemData = currentItem?.data || {};
+    if (itemData.type && itemData.type !== 'count') {
+      return;
+    }
     if (currentItem && currentItem.time > 0) {
       this.updateScore(id, currentItem.time - 1);
     }
@@ -346,8 +467,18 @@ Page({
 
   // 增加分数
   increaseScore(e) {
+    // 如果已完成或待审核，不允许操作
+    const currentElement = this.data.currentElement;
+    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+      return;
+    }
     const id = e.currentTarget.dataset.id;
     const currentItem = this.findItemById(id);
+    // 如果有考核等级（非count类型），不允许修改完成次数
+    const itemData = currentItem?.data || {};
+    if (itemData.type && itemData.type !== 'count') {
+      return;
+    }
     if (currentItem) {
       this.updateScore(id, currentItem.time + 1);
     }
@@ -372,6 +503,15 @@ Page({
 
   updateItemFields(id, fields) {
     const { contents, currentTab } = this.data;
+    // 如果尝试修改time字段，检查是否有考核等级
+    if (fields.time !== undefined) {
+      const targetItem = this.findItemById(id);
+      const itemData = targetItem?.data || {};
+      // 如果有考核等级（非count类型），强制设置为1
+      if (itemData.type && itemData.type !== 'count') {
+        fields.time = 1;
+      }
+    }
     const updatedContents = contents.map(tabContents =>
       tabContents.map(item => item.id === id ? { ...item, ...fields } : item)
     );
@@ -416,6 +556,11 @@ Page({
   },
 
   onDescInput(e) {
+    // 如果已完成或待审核，不允许操作
+    const currentElement = this.data.currentElement;
+    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+      return;
+    }
     const { id } = e.currentTarget.dataset;
     const value = e.detail.value;
     this.updateItemFields(id, { uploadDesc: value });
@@ -473,6 +618,7 @@ Page({
     try{
       await this.uploadAllFiles();
       let tcs = [];
+      console.log(this.data.currentLevel)
       this.data.currentContents.forEach(value=>{
         const jsonObject = JSON.parse(value.type.jsonParam);
         const item = {
@@ -480,7 +626,7 @@ Page({
           "time": value.time != null ? value.time : 0,
           "type":jsonObject.type,
           // TODO 小程序动态
-          "var": (this.data.currentLevel && this.data.currentLevel[value.id]) ? this.data.currentLevel[value.id] : null
+          "var": (this.data.currentLevel && this.data.currentLevel[value.id]) ? this.data.currentLevel[value.id] : {}
         };
 
         console.log(item);
@@ -493,6 +639,7 @@ Page({
           "tcs":tcs
         },
       });
+      console.log(this.data.gradeData)
       const value=await apiService.grade({
         data: this.data.gradeData
       });
@@ -501,9 +648,10 @@ Page({
           title: '提交成功',
           icon: 'success'
         });
-        wx.navigateTo({
+        this.setData({ lastSubmitTimestamp: Date.now(), auditEnabled: true });
+/*         wx.navigateTo({
           url: '/pages/assessment/assessment'
-        });
+        }); */
       }else{
         wx.showToast({
           title: '提交失败',
@@ -523,6 +671,8 @@ Page({
     try{
       await this.uploadAllFiles();
       const value=await apiService.getLeadersAll();
+      console.log(value,666666)
+      console.log(this.data.currentElement)
       const allIds = (value.data || []).map(item => item.id);
       const post=await apiService.postAudit({
         "userId":this.data.userInfo.id,
@@ -534,6 +684,10 @@ Page({
           title: '提交审核成功',
           icon: 'success'
         });
+        this.setData({ auditEnabled: false });
+        wx.navigateTo({
+          url: '/pages/assessment/assessment'
+        }); 
       }else{
         wx.showToast({
           title: '提交审核失败',
@@ -544,6 +698,57 @@ Page({
       console.error(e);
       wx.showToast({
         title: e.message || '提交审核失败',
+        icon: 'none'
+      });
+    }
+  },
+
+
+  // 取消审核
+  cancelAudit() {
+    wx.showModal({
+      title: '取消审核确认',
+      content: '确定要取消审核吗？取消后可以重新提交评价。',
+      success: (res) => {
+        if (res.confirm) {
+          this.doCancelAudit();
+        }
+      }
+    });
+  },
+
+  async doCancelAudit() {
+    try {
+      wx.showLoading({
+        title: '处理中...',
+        mask: true
+      });
+      
+      const res = await apiService.cancelAudit({
+        elementId: this.data.currentElement ? this.data.currentElement.id : null,
+        userId: this.data.userInfo.id
+      });
+      
+      wx.hideLoading();
+      
+      if (res.code === 200) {
+        wx.showToast({
+          title: '取消审核成功',
+          icon: 'success'
+        });
+        // 重新加载数据
+        this.loadEvaluationList();
+      } else {
+        wx.showToast({
+          title: res.message || '取消审核失败',
+          icon: 'none'
+        });
+      }
+    } catch (e) {
+      wx.hideLoading();
+      console.error(e);
+      wx.showToast({
+        title: e.message || '取消审核失败',
         icon: 'none'
       });
     }
@@ -566,6 +771,11 @@ Page({
   },
 
   chooseFile(e) {
+    // 如果已完成或待审核，不允许操作
+    const currentElement = this.data.currentElement;
+    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+      return;
+    }
     const id = e.currentTarget?.dataset?.id;
     if (!id) {
       return;
@@ -592,7 +802,8 @@ Page({
           path: file.path,
           status: 'pending',
           error: '',
-          description: ''
+          description: '',
+          isRemote: false
         }));
         this.appendFilesToItem(id, normalized);
       }
@@ -602,6 +813,10 @@ Page({
   removeFile(e) {
     const id = e.currentTarget.dataset.id;
     const index = e.currentTarget.dataset.index;
+    const userId = this.data.userInfo.id;
+    
+    console.log(id, index, 666666, userId);
+
     if (id == null || index == null) {
       return;
     }
@@ -609,8 +824,87 @@ Page({
     if (!target || !Array.isArray(target.files)) {
       return;
     }
-    const nextFiles = target.files.filter((_, idx) => idx !== Number(index));
-    this.updateItemFields(id, { files: nextFiles });
+    const file = target.files[index];
+    if (!file) {
+      return;
+    }
+    
+    // 如果是远程文件（历史文件），切换删除状态（开关式）
+    if (file.isRemote) {
+      const nextFiles = [...target.files];
+      
+      if (file.status === 'deleted') {
+        // 当前是删除状态，恢复文件
+        const restoredFile = {
+          ...file,
+          status: 'uploaded'
+        };
+        nextFiles[index] = restoredFile;
+        this.updateItemFields(id, { files: nextFiles });
+        
+        wx.showToast({
+          title: '已恢复文件',
+          icon: 'success'
+        });
+      } else {
+        // 当前是正常状态，标记删除
+        const deletedFile = {
+          ...file,
+          status: 'deleted',
+          originalPath: file.originalPath || removeUrlPrefix(file.path) // 保存原始路径（移除URL前缀）用于删除接口
+        };
+        nextFiles[index] = deletedFile;
+        this.updateItemFields(id, { files: nextFiles });
+        
+        wx.showToast({
+          title: '已标记删除，提交时生效',
+          icon: 'success'
+        });
+      }
+    } else {
+      // 本地文件直接删除
+      const nextFiles = target.files.filter((_, idx) => idx !== Number(index));
+      this.updateItemFields(id, { files: nextFiles });
+    }
+  },
+
+  async deleteHistoryFile(deleteFileForm) {
+    try {
+      wx.showLoading({
+        title: '删除中...',
+        mask: true
+      });
+      console.log(this.data.userInfo,45)
+      console.log(deleteFileForm,666666)
+      const res = await apiService.deleteHistoryFile(deleteFileForm);
+
+      wx.hideLoading();
+
+      if (res.code === 200) {
+        wx.showToast({
+          title: res.reason || '删除成功',
+          icon: 'success'
+        });
+        // 从列表中移除文件
+        const target = this.findItemById(itemId);
+        if (target && Array.isArray(target.files)) {
+          const nextFiles = target.files.filter((_, idx) => idx !== Number(fileIndex));
+          this.updateItemFields(itemId, { files: nextFiles });
+        }
+      } else {
+        wx.showToast({
+          title: res.reason || '删除失败',
+          icon: 'none'
+        });
+      }
+    } catch (e) {
+      wx.hideLoading();
+      console.error(e);
+      wx.showToast({
+        title: e.message || '删除失败',
+        icon: 'none'
+      });
+    }
   },
 
   previewFile(e) {
@@ -631,7 +925,8 @@ Page({
       });
       return;
     }
-    const path = file.path;
+
+    const path = file.path || '';
     const name = file.name || '';
     const isImage = /\.(png|jpg|jpeg|bmp|gif|webp)$/i.test(name) || /\.(png|jpg|jpeg|bmp|gif|webp)$/i.test(path);
     if (isImage) {
@@ -658,12 +953,36 @@ Page({
     if (!userInfo || !userInfo.id) {
       throw new Error('用户信息缺失，请重新登录');
     }
+    
     const filesToUpload = [];
+    const filesToDelete = [];
+    
+    // 收集需要上传和删除的文件
     contents.forEach(tabContents => {
       tabContents.forEach(item => {
         const fileList = Array.isArray(item.files) ? item.files : [];
+        console.log(fileList)
         fileList.forEach((file, index) => {
-          if (file.path && file.status !== 'uploaded') {
+          // 收集需要删除的历史文件（标记为删除的远程文件）
+          if (file.isRemote && file.status === 'deleted') {
+            // 移除 URL 前缀，只保留相对路径
+            const cleanPath = removeUrlPrefix(file.originalPath || file.path);
+            filesToDelete.push({
+              filePath: cleanPath,
+              description: item.uploadDesc || '',
+              contentId: item.id,
+              userId: userInfo.id
+            });
+            return;
+          }
+          
+          // 跳过已上传成功的文件
+          if (file.status === 'uploaded') {
+            return;
+          }
+          
+          // 只上传有本地路径的新文件
+          if (file.path && !file.isRemote) {
             filesToUpload.push({
               itemId: item.id,
               fileIndex: index,
@@ -675,36 +994,87 @@ Page({
       });
     });
 
-    if (!filesToUpload.length) {
+    if (!filesToUpload.length && !filesToDelete.length) {
       return;
     }
 
     wx.showLoading({
-      title: '文件上传中...',
+      title: '处理文件中...',
       mask: true
     });
 
     try {
-      for (const fileItem of filesToUpload) {
-        this.updateFileStatus(fileItem.itemId, fileItem.fileIndex, { status: 'uploading', error: '' });
-        try {
-          const res = await apiService.uploadEvaluationFile({
-            filePath: fileItem.file.path,
-            description: fileItem.description || '',
-            contentId: fileItem.itemId,
-            userId: userInfo.id
-          });
-          if (res.code === 200) {
-            this.updateFileStatus(fileItem.itemId, fileItem.fileIndex, { status: 'uploaded' });
-          } else {
-            const reason = res.reason || '上传失败，请重试';
-            this.updateFileStatus(fileItem.itemId, fileItem.fileIndex, { status: 'failed', error: reason });
-            throw new Error(reason);
+      // 1. 先删除需要删除的历史文件
+      if (filesToDelete.length > 0) {
+        console.log('删除文件:', filesToDelete);
+        for (const deleteItem of filesToDelete) {
+          try {
+            const res = await apiService.deleteHistoryFile(deleteItem);
+            if (res.code !== 200) {
+              console.warn('删除文件失败:', deleteItem, res);
+            }
+          } catch (error) {
+            console.warn('删除文件出错:', deleteItem, error);
           }
-        } catch (error) {
-          const message = error?.message || '上传失败，请重试';
-          this.updateFileStatus(fileItem.itemId, fileItem.fileIndex, { status: 'failed', error: message });
-          throw error;
+        }
+      }
+
+      // 2. 再上传新文件
+      if (filesToUpload.length > 0) {
+        // 将所有文件标记为上传中
+        filesToUpload.forEach(fileItem => {
+          this.updateFileStatus(fileItem.itemId, fileItem.fileIndex, { status: 'uploading', error: '' });
+        });
+
+        // 按 contentId 分组上传
+        const filesByContentId = {};
+        filesToUpload.forEach(fileItem => {
+          const contentId = fileItem.itemId;
+          if (!filesByContentId[contentId]) {
+            filesByContentId[contentId] = [];
+          }
+          filesByContentId[contentId].push(fileItem);
+        });
+
+        console.log('上传文件分组:', filesByContentId);
+
+        // 对每个 contentId 一次性上传所有文件
+        for (const contentId in filesByContentId) {
+          const items = filesByContentId[contentId];
+          const filePaths = items.map(item => item.file.path).join(',');
+          const firstItem = items[0];
+          const description = firstItem.description || '';
+
+          console.log('上传文件路径:', filePaths);
+
+          try {
+            const res = await apiService.uploadEvaluationFile({
+              filePath: filePaths,
+              description: description,
+              contentId: contentId,
+              userId: userInfo.id
+            });
+            if (res.code === 200) {
+              // 所有文件上传成功
+              items.forEach(item => {
+                this.updateFileStatus(item.itemId, item.fileIndex, { status: 'uploaded' });
+              });
+            } else {
+              const reason = res.reason || '上传失败，请重试';
+              // 所有文件标记为失败
+              items.forEach(item => {
+                this.updateFileStatus(item.itemId, item.fileIndex, { status: 'failed', error: reason });
+              });
+              throw new Error(reason);
+            }
+          } catch (error) {
+            const message = error?.message || '上传失败，请重试';
+            // 所有文件标记为失败
+            items.forEach(item => {
+              this.updateFileStatus(item.itemId, item.fileIndex, { status: 'failed', error: message });
+            });
+            throw error;
+          }
         }
       }
     } finally {

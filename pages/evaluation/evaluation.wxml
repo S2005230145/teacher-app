@@ -42,9 +42,11 @@
       </view>
     </view>
 
+
     <!-- 评价内容区域 - 双向绑定 -->
-    <scroll-view class="content" scroll-y style="margin-bottom:210rpx;">
-      <view wx:for="{{currentContents}}" wx:key="id" class="evaluation-item">
+    <view class="content-wrapper {{currentElement && (currentElement.completed === true || currentElement.completed === false) ? 'locked' : ''}}">
+      <scroll-view class="content" scroll-y style="margin-bottom:210rpx;">
+        <view wx:for="{{currentContents}}" wx:key="id" class="evaluation-item">
         <view class="item-header">
           <text class="item-title">{{item.title}}</text>
           <icon type="info" size="32"
@@ -55,21 +57,46 @@
         </view>
 
         <!-- 选择器类型 -->
-        <!-- 普通类型 - 完成次数 -->
-        <view class="scoring-area" wx:if="{{item.data.type=='count'}}">
+        <!-- 完成次数 - 所有类型都显示 -->
+        <view class="scoring-area">
           <text class="score-label">完成次数：</text>
           <view class="score-controls">
-            <button class="score-btn minus" bindtap="decreaseScore" data-id="{{item.id}}">-</button>
-            <input class="score-input" type="number" value="{{item.time}}"
-                   bindinput="onScoreInput" data-id="{{item.id}}" placeholder="0"/>
-            <button class="score-btn plus" bindtap="increaseScore" data-id="{{item.id}}">+</button>
+            <!-- count类型：可以修改（已完成或待审核状态时禁用） -->
+            <block wx:if="{{item.data.type=='count'}}">
+              <button class="score-btn minus {{currentElement && (currentElement.completed === true || currentElement.completed === false) ? 'disabled' : ''}}" 
+                      bindtap="decreaseScore" 
+                      data-id="{{item.id}}"
+                      disabled="{{currentElement && (currentElement.completed === true || currentElement.completed === false)}}">-</button>
+              <input class="score-input" 
+                     type="number" 
+                     value="{{item.time}}"
+                     bindinput="onScoreInput" 
+                     data-id="{{item.id}}" 
+                     placeholder="0"
+                     disabled="{{currentElement && (currentElement.completed === true || currentElement.completed === false)}}"/>
+              <button class="score-btn plus {{currentElement && (currentElement.completed === true || currentElement.completed === false) ? 'disabled' : ''}}" 
+                      bindtap="increaseScore" 
+                      data-id="{{item.id}}"
+                      disabled="{{currentElement && (currentElement.completed === true || currentElement.completed === false)}}">+</button>
+            </block>
+            <!-- 非count类型：固定为1，不可修改 -->
+            <block wx:else>
+              <button class="score-btn minus disabled" disabled>-</button>
+              <input class="score-input" type="number" value="1" disabled/>
+              <button class="score-btn plus disabled" disabled>+</button>
+            </block>
           </view>
         </view>
 
+        <!-- 考核等级 - 非count类型显示（已完成或待审核状态时禁用） -->
         <view class="scoring-area-rad" wx:if="{{item.data.type!='count'}}">
             <text class="score-label-rad">考核等级：</text>
             <view class="radio-controls-rad" wx:for="{{item.data.data}}" wx:for-item="value" wx:key="name">
-              <view class="radio-option {{currentLevel[item.id] && currentLevel[item.id].name === value.name ? 'selected' : ''}}" bindtap="selectLevel"  data-id="{{item.id}}" data-level="{{value.name}}" data-score="{{value.score}}">
+              <view class="radio-option {{currentLevel[item.id] && currentLevel[item.id].name === value.name ? 'selected' : ''}} {{currentElement && (currentElement.completed === true || currentElement.completed === false) ? 'disabled' : ''}}" 
+                    bindtap="selectLevel"  
+                    data-id="{{item.id}}" 
+                    data-level="{{value.name}}" 
+                    data-score="{{value.score}}">
                 <text class="radio-text">{{value.name}}</text>
               </view>
             </view>
@@ -83,36 +110,72 @@
                       auto-height
                       value="{{item.uploadDesc}}"
                       data-id="{{item.id}}"
-                      bindinput="onDescInput"></textarea>
+                      bindinput="onDescInput"
+                      disabled="{{currentElement && (currentElement.completed === true || currentElement.completed === false)}}"></textarea>
           </view>
 
         <view class="file-row">
-          <button class="file-btn" bindtap="chooseFile" data-id="{{item.id}}">上传文件</button>
+          <button class="file-btn {{currentElement && (currentElement.completed === true || currentElement.completed === false) ? 'disabled' : ''}}" 
+                  bindtap="chooseFile" 
+                  data-id="{{item.id}}"
+                  disabled="{{currentElement && (currentElement.completed === true || currentElement.completed === false)}}">上传文件</button>
           <text class="file-limit">已选 {{(item.files && item.files.length) || 0}} / {{maxFilesPerItem}}</text>
         </view>
 
-        <view class="files-list" wx:if="{{item.files && item.files.length}}">
+        <scroll-view class="files-list" wx:if="{{item.files && item.files.length}}" scroll-y>
           <view class="file-entry" wx:for="{{item.files}}" wx:key="index" wx:for-item="file">
             <text class="file-name">{{file.name}}</text>
             <view class="file-entry__meta">
               <text class="status-tag uploading" wx:if="{{file.status === 'uploading'}}">上传中...</text>
               <text class="status-tag pending" wx:elif="{{file.status === 'pending'}}">待上传</text>
               <text class="status-tag success" wx:elif="{{file.status === 'uploaded'}}">已上传</text>
+              <text class="status-tag deleted" wx:elif="{{file.status === 'deleted'}}">待删除</text>
               <text class="status-tag error" wx:elif="{{file.status === 'failed'}}">{{file.error || '上传失败'}}</text>
-              <button class="link-btn" bindtap="previewFile" data-id="{{item.id}}" data-index="{{index}}">预览</button>
-              <button class="link-btn" bindtap="removeFile" data-id="{{item.id}}" data-index="{{index}}">删除</button>
+              <view class="file-actions">
+                <button class="action-btn preview-btn" bindtap="previewFile" data-id="{{item.id}}" data-index="{{index}}" wx:if="{{file.status !== 'deleted'}}">预览</button>
+                <button class="action-btn delete-btn" bindtap="removeFile" data-id="{{item.id}}" data-index="{{index}}" wx:if="{{!file.isRemote}}">删除</button>
+                <button class="action-btn delete-btn {{file.status === 'deleted' ? 'restore' : ''}}" bindtap="removeFile" data-id="{{item.id}}" data-index="{{index}}" wx:if="{{file.isRemote}}">
+                  {{file.status === 'deleted' ? '恢复' : '删除'}}
+                </button>
+              </view>
             </view>
           </view>
-        </view>
-        </view>
-          </view>
         </scroll-view>
+        </view>
+      </view>
+      </scroll-view>
+      
+      <!-- 锁住遮罩层 -->
+      <!-- completed=true：评价已完成，完全锁住，显示最终得分 -->
+      <view class="lock-overlay" wx:if="{{currentElement && currentElement.completed === true}}">
+        <view class="lock-message compact">
+          <view class="final-score-display">
+            <text class="final-score-value">
+              {{currentElement.finalScore > 5000 ? '合格' : (currentElement.finalScore < -5000 ? '不合格' : currentElement.finalScore)}}
+            </text>
+          </view>
+        </view>
+      </view>
+      <!-- completed=false：待审核中，半透明可看到内容 -->
+      <view class="lock-overlay pending" wx:elif="{{currentElement && currentElement.completed === false}}">
+        <view class="lock-message">
+          <text class="lock-text">待审核中</text>
+        </view>
+      </view>
+    </view>
 
     <!-- 底部按钮 -->
     <view class="footer">
+      <!-- completed=false 或未设置：显示正常按钮 -->
+      <block wx:if="{{!currentElement || currentElement.completed === null}}">
         <button class="btn submit-btn {{canSubmit ? '' : 'disabled'}}" bindtap="submitEvaluation" disabled="{{!canSubmit}}">提交评价</button>
-        <button class="btn audit-btn {{canSubmit ? '' : 'disabled'}}" bindtap="submitAudit" disabled="{{!canSubmit}}">提交审核</button>
-        <button class="btn back-btn" bindtap="navigateBack">返回</button>
-      </view>
+        <button class="btn audit-btn {{auditEnabled ? '' : 'disabled'}}" bindtap="submitAudit" disabled="{{!auditEnabled}}">提交审核</button>
+      </block>
+      <!-- completed=false：显示取消审核按钮 -->
+      <block wx:elif="{{currentElement && currentElement.completed === false}}">
+        <button class="btn cancel-audit-btn" bindtap="cancelAudit">取消审核</button>
+      </block>
+      <button class="btn back-btn" bindtap="navigateBack">返回</button>
+    </view>
   </view>
 </view>

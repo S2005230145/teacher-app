@@ -9,19 +9,30 @@ Page({
 
   onLoad(options) {
     this.loadUserInfo();
+
     this.getAssessmentList(options.id);
   },
-  navigateToEvaluation(e){
-    wx.navigateTo({
-      url: '/pages/evaluation/evaluation?indicatorId='+e.currentTarget.dataset.id
-    });
+  async navigateToEvaluation(e) {
+    const elementId = e.currentTarget.dataset.id;
+    console.log(elementId)
+    try {
+      wx.navigateTo({
+        url: '/pages/evaluation/evaluation?indicatorId=' + elementId
+      });
+    } catch (error) {
+      console.error('检查审核状态失败:', error);
+      // 即使检查失败，也允许进入评价页面
+      wx.navigateTo({
+        url: '/pages/evaluation/evaluation?indicatorId=' + elementId
+      });
+    }
   },
+
   // 加载用户信息
   loadUserInfo() {
     const userInfoStorage = wx.getStorageSync('userInfo') || {};
     this.setData({ userInfo:userInfoStorage });
   },
-
   // 加载考核数据
   async getAssessmentList(kpiId){
     try {

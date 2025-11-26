@@ -16,7 +16,8 @@ Page({
     selectedCampus: '',
     selectedCampusId: null,
     campusFocus: false,
-    showCampusPicker: false
+    showCampusPicker: false,
+    lastPickerChangeTime: 0 // 记录最后一次 picker-view 变化的时间
   },
 
   // 监听输入变化
@@ -51,9 +52,23 @@ Page({
 
   // 学校选择相关方法
   showCampusPicker() {
+    const campusList = this.data.campusList || [];
+    const selectedCampusId = this.data.selectedCampusId;
+    let index = 0;
+
+    // 如果已经选择过学校，则定位到已选择的那一项
+    if (selectedCampusId != null && campusList.length) {
+      const foundIndex = campusList.findIndex(item => item.id === selectedCampusId);
+      if (foundIndex >= 0) {
+        index = foundIndex;
+      }
+    }
+
     this.setData({ 
       showCampusPicker: true,
-      campusFocus: true 
+      campusFocus: true,
+      campusIndex: index,
+      lastPickerChangeTime: 0 // 重置时间
     });
   },
 
@@ -70,19 +85,77 @@ Page({
 
   // picker-view变化事件
   onPickerViewChange(e) {
-    const index = e.detail.value[0];
+    const value = e && e.detail && e.detail.value;
+    // 防御：value 不是数组或没有索引时直接返回
+    if (!Array.isArray(value) || typeof value[0] !== 'number') {
+      return;
+    }
+    let index = value[0];
+    const max = (this.data.campusList || []).length;
+
+    // 防御：下标越界时进行修正
+    if (index < 0) index = 0;
+    if (max && index >= max) index = max - 1;
+
+    // 记录变化时间
     this.setData({
-      campusIndex: index
+      campusIndex: index,
+      lastPickerChangeTime: Date.now()
     });
   },
 
   // 确认选择
   confirmCampusPicker() {
-    const index = this.data.campusIndex;
-    const selectedCampus = this.data.campusList[index];
+    const campusList = this.data.campusList || [];
+    let index = this.data.campusIndex;
+    const lastChangeTime = this.data.lastPickerChangeTime;
+    const now = Date.now();
+
+    // 检查是否刚滚动过（300ms内），如果是则提示用户等待
+    if (now - lastChangeTime < 300) {
+      wx.showToast({
+        title: '请稍等滚动结束',
+        icon: 'none',
+        duration: 1500
+      });
+      // 延迟执行，等待滚动结束
+      setTimeout(() => {
+        this.doConfirmCampusPicker();
+      }, 300);
+      return;
+    }
+
+    this.doConfirmCampusPicker();
+  },
+
+  // 执行确认选择的实际逻辑
+  doConfirmCampusPicker() {
+    const campusList = this.data.campusList || [];
+    let index = this.data.campusIndex;
+
+    // 防御：如果 index 为 undefined 或非法，回退到 0
+    if (typeof index !== 'number' || Number.isNaN(index)) {
+      index = 0;
+    }
+    if (index < 0 || index >= campusList.length) {
+      index = 0;
+    }
+
+    const selectedCampus = campusList[index];
+    
+    // 安全检查：确保 selectedCampus 存在
+    if (!selectedCampus) {
+      console.warn('选中的校区不存在，index:', index, 'campusList length:', campusList.length);
+      this.setData({
+        showCampusPicker: false,
+        campusFocus: false
+      });
+      return;
+    }
+    
     this.setData({
-      selectedCampus: selectedCampus.campusName || selectedCampus.name,
-      selectedCampusId: selectedCampus.id,
+      selectedCampus: selectedCampus.campusName || selectedCampus.name || '',
+      selectedCampusId: selectedCampus.id || null,
       showCampusPicker: false,
       campusFocus: false
     });
@@ -277,7 +350,6 @@ Page({
     try {
       wx.showLoading({ title: '加载中...' });
       const res = await apiService.getSchoolList();
-      console.log(res)
       if (res.code === 200 && res.list && res.list.length > 0) {
         // 格式化学校列表数据
         const campusList = res.list.map(item => ({

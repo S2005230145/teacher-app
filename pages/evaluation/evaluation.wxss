@@ -179,6 +179,107 @@
   font-weight: 600;
 }
 
+/* 最终得分横幅 */
+.final-score-banner{
+  margin: 20rpx 30rpx 0;
+  padding: 24rpx 32rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 12rpx 28rpx rgba(82, 196, 26, 0.35);
+  color: #fff;
+}
+
+.final-score-banner__track{
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  min-width: 100%;
+}
+
+.final-score-banner__label{
+  font-size: 28rpx;
+  opacity: 0.85;
+}
+
+.final-score-banner__value{
+  font-size: 48rpx;
+  font-weight: 600;
+}
+
+/* 内容区域包装器 */
+.content-wrapper{
+  position: relative;
+}
+
+.content-wrapper.locked{
+  position: relative;
+}
+
+/* 锁住遮罩层 */
+.lock-overlay{
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4rpx);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 待审核状态：半透明，可看到内容 */
+.lock-overlay.pending{
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(2rpx);
+}
+
+.lock-message{
+  padding: 36rpx 50rpx;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 20rpx;
+  backdrop-filter: blur(10rpx);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.lock-message.compact{
+  padding: 32rpx 40rpx;
+  gap: 18rpx;
+}
+
+.lock-text{
+  font-size: 32rpx;
+  color: #fff;
+  font-weight: 500;
+}
+
+.final-score-display{
+  display: inline-flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 6rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(255,255,255,0.18);
+}
+
+.final-score-label{
+  font-size: 24rpx;
+  color: rgba(255,255,255,0.85);
+}
+
+.final-score-value{
+  font-size: 38rpx;
+  color: #fff;
+  font-weight: 600;
+}
+
 .container {
   min-height: 100vh;
   background: #f5f5f5;
@@ -347,6 +448,19 @@
   color: #60A5FA;
 }
 
+.radio-option.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.file-btn.disabled {
+  background: #d9d9d9 !important;
+  color: #999 !important;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 /* 不同等级的颜色区分 */
 .radio-option[data-level="A"].selected {
   border-color: #52c41a;
@@ -410,6 +524,13 @@
   color: #60A5FA;
 }
 
+.score-btn.disabled {
+  border-color: #d9d9d9;
+  color: #d9d9d9;
+  background: #f5f5f5;
+  opacity: 0.6;
+}
+
 .score-input {
   width: 380rpx;
   height: 60rpx;
@@ -417,6 +538,12 @@
   border-radius: 8rpx;
   text-align: center;
   font-size: 28rpx;
+}
+
+.score-input[disabled] {
+  background: #f5f5f5;
+  color: #999;
+  opacity: 0.6;
 }
 
 .score-unit {
@@ -494,6 +621,9 @@
   display: flex;
   flex-direction: column;
   gap: 20rpx;
+  max-height: 180rpx; /* 大约一个文件项的高度，用户可通过滚动查看其他文件 */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */
 }
 
 .file-entry{
@@ -509,12 +639,56 @@
 .file-entry__meta{
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16rpx;
   flex-wrap: wrap;
 }
 
-.file-entry__meta .link-btn{
+.file-actions{
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-left: auto;
+}
+
+.action-btn{
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
   font-size: 24rpx;
+  border: none;
+  line-height: 1.2;
+  transition: all 0.3s ease;
+}
+
+.preview-btn{
+  background: #60A5FA;
+  color: #fff;
+  box-shadow: 0 4rpx 8rpx rgba(96,165,250,0.2);
+}
+
+.preview-btn:active{
+  background: #3D8BF7;
+  transform: scale(0.95);
+}
+
+.delete-btn{
+  background: #ff4d4f;
+  color: #fff;
+  box-shadow: 0 4rpx 8rpx rgba(255,77,79,0.2);
+}
+
+.delete-btn:active{
+  background: #ff7875;
+  transform: scale(0.95);
+}
+
+.delete-btn.restore {
+  background: #10B981;
+  color: white;
+}
+
+.delete-btn.restore:active {
+  background: #059669;
 }
 
 .file-btn {
@@ -542,6 +716,11 @@
   border: none;
   font-size: 24rpx;
   padding: 0;
+}
+
+/* 兼容旧样式，如果其他地方还在使用 */
+.file-entry__meta .link-btn{
+  font-size: 24rpx;
 }
 
 .status-row {
@@ -573,6 +752,11 @@
 .status-tag.error {
   color: #ff4d4f;
   background: #fff1f0;
+}
+
+.status-tag.deleted {
+  background: #FEF3C7;
+  color: #D97706;
 }
 
 /* 底部按钮 */
@@ -614,6 +798,12 @@
   background: white;
   color: #666;
   border: 2rpx solid #ddd;
+}
+
+.cancel-audit-btn {
+  background: #ff4d4f;
+  color: white;
+  border: none;
 }
 
 .btn.disabled {

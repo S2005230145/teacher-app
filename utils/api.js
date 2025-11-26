@@ -132,32 +132,69 @@ class ApiService {
   }
 
   uploadEvaluationFile({ filePath, description, contentId, userId }) {
-    const url = `${this.baseURL}/front/tk/file/upload/`;
-    return new Promise((resolve, reject) => {
-      wx.uploadFile({
-        url,
-        filePath,
-        name: 'file',
-        formData: {
-          description: description || '',
-          contentId,
-          userId
-        },
-        header: {
-          'Authorization': wx.getStorageSync('token') || ''
-        },
-        success: (res) => {
-          try {
-            const data = JSON.parse(res.data);
-            resolve(data);
-          } catch (error) {
-            reject(error);
+    const url = `${this.baseURL}/front/tk/file/upload/add/`;
+
+    // 将 filePath 统一处理为数组，支持字符串（带逗号）、单个路径或数组
+    const normalizeFilePaths = (input) => {
+      if (!input) {
+        return [];
+      }
+      if (Array.isArray(input)) {
+        return input.map(path => (path || '').trim()).filter(Boolean);
+      }
+      if (typeof input === 'string') {
+        return input.split(',').map(path => path.trim()).filter(Boolean);
+      }
+      // 其他类型（如对象）统一转成字符串
+      return [String(input).trim()].filter(Boolean);
+    };
+
+    const filePaths = normalizeFilePaths(filePath);
+    if (!filePaths.length) {
+      return Promise.reject(new Error('没有有效的文件路径'));
+    }
+
+    const uploadSingleFile = (singleFilePath) => {
+      return new Promise((resolve, reject) => {
+        wx.uploadFile({
+          url,
+          filePath: singleFilePath,
+          name: 'file',
+          formData: {
+            description: description || '',
+            contentId,
+            userId
+          },
+          header: {
+            'Authorization': wx.getStorageSync('token') || ''
+          },
+          success: (res) => {
+            try {
+              const data = JSON.parse(res.data);
+              resolve(data);
+            } catch (error) {
+              reject(error);
+            }
+          },
+          fail: (err) => {
+            reject(err);
           }
-        },
-        fail: (err) => {
-          reject(err);
-        }
+        });
       });
+    };
+
+    if (filePaths.length === 1) {
+      return uploadSingleFile(filePaths[0]);
+    }
+
+    // 多个文件并行上传
+    return Promise.all(filePaths.map(uploadSingleFile)).then(results => {
+      const failedResults = results.filter(r => r.code !== 200);
+      if (failedResults.length > 0) {
+        const errorMsg = failedResults[0].reason || '部分文件上传失败';
+        return Promise.reject(new Error(errorMsg));
+      }
+      return results[0] || { code: 200, message: '所有文件上传成功' };
     });
   }
   //statistics.js
@@ -206,6 +243,36 @@ class ApiService {
     });
   }
 
+  //判断是否提交过审核
+getIsAudit(data){
+  return this.request("/front/tk/is/submit/audit/",{
+    method: 'POST',
+    data:data
+  });
 }
+
+cancelAudit(data){
+  return this.request("/front/tk/audit/withDraw/",{
+    method: 'POST',
+    data:data
+  });
+}
+
+  // 删除历史文件
+  deleteHistoryFile({ filePath, description, contentId, userId }) {
+    return this.request("/front/tk/file/delete/", {
+      method: 'POST',
+      data: {
+        filePath,
+        description: description || '',
+        contentId,
+        userId
+      }
+    });
+  }
+
+}
+
+
 
 export default new ApiService();
