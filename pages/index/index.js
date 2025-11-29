@@ -8,22 +8,18 @@ Page({
     passwordVisible: false,
     loading: false,
     errorMessage: '',
-    showAutoLoginTip: false,
-    loginTimer: null, // 自动登录定时器
     // 学校选择相关
     campusList: [],
     campusIndex: 0,
     selectedCampus: '',
     selectedCampusId: null,
     campusFocus: false,
-    showCampusPicker: false,
-    lastPickerChangeTime: 0 // 记录最后一次 picker-view 变化的时间
+    showCampusPicker: false
   },
 
   // 监听输入变化
   onInputChange(e) {
-    // 双向绑定已通过 model:value 处理，这里主要处理自动登录逻辑
-    this.checkAutoLogin();
+    // 双向绑定已通过 model:value 处理
   },
 
   onPhoneFocus() {
@@ -32,7 +28,6 @@ Page({
 
   onPhoneBlur() {
     this.setData({ phoneFocus: false });
-    this.checkAutoLogin();
   },
 
   onPasswordFocus() {
@@ -41,7 +36,6 @@ Page({
 
   onPasswordBlur() {
     this.setData({ passwordFocus: false });
-    this.checkAutoLogin();
   },
 
   togglePasswordVisibility() {
@@ -67,8 +61,7 @@ Page({
     this.setData({ 
       showCampusPicker: true,
       campusFocus: true,
-      campusIndex: index,
-      lastPickerChangeTime: 0 // 重置时间
+      campusIndex: index
     });
   },
 
@@ -86,7 +79,6 @@ Page({
   // picker-view变化事件
   onPickerViewChange(e) {
     const value = e && e.detail && e.detail.value;
-    // 防御：value 不是数组或没有索引时直接返回
     if (!Array.isArray(value) || typeof value[0] !== 'number') {
       return;
     }
@@ -97,40 +89,16 @@ Page({
     if (index < 0) index = 0;
     if (max && index >= max) index = max - 1;
 
-    // 记录变化时间
+    // 立即更新 campusIndex，确保确认时能获取到最新值
     this.setData({
-      campusIndex: index,
-      lastPickerChangeTime: Date.now()
+      campusIndex: index
     });
   },
 
   // 确认选择
   confirmCampusPicker() {
     const campusList = this.data.campusList || [];
-    let index = this.data.campusIndex;
-    const lastChangeTime = this.data.lastPickerChangeTime;
-    const now = Date.now();
-
-    // 检查是否刚滚动过（300ms内），如果是则提示用户等待
-    if (now - lastChangeTime < 300) {
-      wx.showToast({
-        title: '请稍等滚动结束',
-        icon: 'none',
-        duration: 1500
-      });
-      // 延迟执行，等待滚动结束
-      setTimeout(() => {
-        this.doConfirmCampusPicker();
-      }, 300);
-      return;
-    }
-
-    this.doConfirmCampusPicker();
-  },
-
-  // 执行确认选择的实际逻辑
-  doConfirmCampusPicker() {
-    const campusList = this.data.campusList || [];
+    // 使用最新的 campusIndex
     let index = this.data.campusIndex;
 
     // 防御：如果 index 为 undefined 或非法，回退到 0
@@ -145,7 +113,7 @@ Page({
     
     // 安全检查：确保 selectedCampus 存在
     if (!selectedCampus) {
-      console.warn('选中的校区不存在，index:', index, 'campusList length:', campusList.length);
+      console.warn('选中的校区不存在，index:', index);
       this.setData({
         showCampusPicker: false,
         campusFocus: false
@@ -159,36 +127,6 @@ Page({
       showCampusPicker: false,
       campusFocus: false
     });
-    this.checkAutoLogin();
-  },
-
-  // 检查是否满足自动登录条件
-  checkAutoLogin() {
-    const { phone, password, selectedCampusId, loading } = this.data;
-    
-    // 清除之前的定时器
-    if (this.loginTimer) {
-      clearTimeout(this.loginTimer);
-      this.loginTimer = null;
-    }
-
-    // 验证手机号格式（11位数字）
-    const phoneValid = /^1[3-9]\d{9}$/.test(phone.trim());
-    
-    // 如果表单有效且不在加载中，设置自动登录（需要选择校区）
-    if (phoneValid && password.length >= 6 && selectedCampusId !== null && !loading) {
-      this.setData({ 
-        showAutoLoginTip: true,
-        errorMessage: '' 
-      });
-      
-      // 延迟1秒后自动登录（给用户反应时间）
-      this.loginTimer = setTimeout(() => {
-        this.onLogin();
-      }, 1000);
-    } else {
-      this.setData({ showAutoLoginTip: false });
-    }
   },
 
   // 计算属性：表单是否有效
@@ -200,12 +138,6 @@ Page({
 
   // 登录方法
   async onLogin() {
-    // 清除自动登录定时器
-    if (this.loginTimer) {
-      clearTimeout(this.loginTimer);
-      this.loginTimer = null;
-    }
-    
     // 验证手机号
     const phone = this.data.phone.trim();
     if (!/^1[3-9]\d{9}$/.test(phone)) {
@@ -236,8 +168,7 @@ Page({
     
     this.setData({ 
       loading: true,
-      errorMessage: '',
-      showAutoLoginTip: false 
+      errorMessage: ''
     });
     try {
       // 调用登录接口
@@ -361,11 +292,23 @@ Page({
           principal: item.principal
         }));
         
+        // 如果之前有选择过学校，恢复选择
+        let initialIndex = 0;
+        const savedCampus = wx.getStorageSync('selectedCampus');
+        if (savedCampus && savedCampus.id) {
+          const foundIndex = campusList.findIndex(item => item.id === savedCampus.id);
+          if (foundIndex >= 0) {
+            initialIndex = foundIndex;
+            this.setData({
+              selectedCampus: savedCampus.name || campusList[foundIndex].campusName,
+              selectedCampusId: savedCampus.id
+            });
+          }
+        }
+        
         this.setData({
           campusList: campusList,
-          campusIndex: 0,
-          selectedCampus: campusList[0].campusName,
-          selectedCampusId: campusList[0].id
+          campusIndex: initialIndex
         });
       } else {
         wx.showToast({
@@ -384,10 +327,4 @@ Page({
     }
   },
 
-  // 页面卸载时清理定时器
-  onUnload() {
-    if (this.loginTimer) {
-      clearTimeout(this.loginTimer);
-    }
-  }
 })

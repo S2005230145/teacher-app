@@ -96,3 +96,8 @@ page {
 
 /* 注意：微信小程序的picker mode="selector"弹窗是系统原生组件，无法通过CSS修改其内部样式 */
 /* 如需自定义弹窗样式，请使用picker-view组件 */
+
+/* 尝试全局设置 picker 字体（通常无效，因为系统原生组件） */
+picker {
+  font-size: 36rpx;
+}

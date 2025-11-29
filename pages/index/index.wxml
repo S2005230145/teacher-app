@@ -12,10 +12,12 @@
     <!-- 头部区域 -->
     <view class="header">
       <view class="logo-wrapper">
-        <view class="logo">👨‍🏫</view>
+        <view class="logo">
+          <image src="https://r.xcx100.info/logo.png" mode=""></image>
+        </view>
         <view class="logo-glow"></view>
       </view>
-      <text class="app-name">教师绩效考核</text>
+      <text class="app-name">音小教师绩效考评</text>
       <text class="app-subtitle">Teacher Performance System</text>
     </view>
     <!-- 登录表单 -->
@@ -30,7 +32,7 @@
       </view>
       
       <!-- 手机号输入组 -->
-      <view class="input-group">
+      <view class="input-group" wx:if="{{selectedCampusId}}">
       <!-- <view class="input-icon">📱</view> -->
         <input 
           class="input" 
@@ -47,7 +49,7 @@
       </view>
 
       <!-- 密码输入组 -->
-      <view class="input-group">
+      <view class="input-group" wx:if="{{selectedCampusId}}">
       <!--  <view class="input-icon">🔒</view> -->
         <input 
           class="input" 
@@ -97,7 +99,7 @@
         <text class="picker-title">选择学校</text>
         <text class="picker-action confirm" bindtap="confirmCampusPicker">确定</text>
       </view>
-      <picker-view class="picker-view" indicator-style="height: 60rpx" value="{{[campusIndex]}}" bindchange="onPickerViewChange">
+      <picker-view class="picker-view" indicator-style="height: 80rpx" value="{{[campusIndex]}}" bindchange="onPickerViewChange">
         <picker-view-column>
           <view class="picker-item" wx:for="{{campusList}}" wx:key="id">
             {{item.campusName || item.name}}

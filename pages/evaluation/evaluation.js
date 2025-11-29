@@ -126,6 +126,13 @@ Page({
     this.loadEvaluationList();
   },
 
+  // 页面显示时刷新数据（包括从其他页面返回时）
+  onShow() {
+    if (this.data.indicatorId) {
+      this.loadEvaluationList();
+    }
+  },
+
   // 选择等级
   selectLevel(e) {
     // 如果已完成或待审核，不允许操作
@@ -294,6 +301,10 @@ Page({
         });
       });
 
+      // 保存当前的 lastSubmitTimestamp 和 auditEnabled，避免刷新时丢失
+      const preservedLastSubmitTimestamp = this.data.lastSubmitTimestamp;
+      const preservedAuditEnabled = this.data.auditEnabled;
+
       this.setData({
         tabs: formatTabs,
         contents: normalizedContents,
@@ -301,10 +312,11 @@ Page({
         currentContents: normalizedContents[currentTab] || [],
         currentElement: currentTabInfo,
         currentLevel: restoredLevels,
-        auditEnabled: false,
-        lastSubmitTimestamp: null
+        // 保留之前的状态，如果存在的话
+        lastSubmitTimestamp: preservedLastSubmitTimestamp || null,
+        auditEnabled: preservedAuditEnabled || false
       });
-      // 初始化按钮状态
+      // 初始化按钮状态（会重新计算 auditEnabled）
       this.updateButtonState();
     }catch(e){
       console.error(e);
@@ -649,6 +661,8 @@ Page({
           icon: 'success'
         });
         this.setData({ lastSubmitTimestamp: Date.now(), auditEnabled: true });
+        // 刷新页面数据
+        this.loadEvaluationList();
 /*         wx.navigateTo({
           url: '/pages/assessment/assessment'
         }); */
@@ -685,9 +699,7 @@ Page({
           icon: 'success'
         });
         this.setData({ auditEnabled: false });
-        wx.navigateTo({
-          url: '/pages/assessment/assessment'
-        }); 
+        wx.navigateBack()   
       }else{
         wx.showToast({
           title: '提交审核失败',
@@ -806,6 +818,59 @@ Page({
           isRemote: false
         }));
         this.appendFilesToItem(id, normalized);
+      }
+    });
+  },
+
+  // 拍照上传
+  chooseImage(e) {
+    // 如果已完成或待审核，不允许操作
+    const currentElement = this.data.currentElement;
+    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+      return;
+    }
+    const id = e.currentTarget?.dataset?.id;
+    if (!id) {
+      return;
+    }
+    const target = this.findItemById(id);
+    const existing = Array.isArray(target?.files) ? target.files.length : 0;
+    const maxFiles = this.data.maxFilesPerItem || 5;
+    const remain = maxFiles - existing;
+    if (remain <= 0) {
+      wx.showToast({
+        title: `最多上传${maxFiles}个文件`,
+        icon: 'none'
+      });
+      return;
+    }
+    // 使用 chooseMedia API（推荐，支持拍照和视频）
+    wx.chooseMedia({
+      count: remain,
+      mediaType: ['image'], // 只允许拍照
+      sourceType: ['camera'], // 只允许拍照，不允许从相册选择
+      camera: 'back', // 默认后置摄像头
+      success: (res) => {
+        const files = res.tempFiles || [];
+        if (!files.length) return;
+        const normalized = files.map((file, index) => ({
+          name: `照片_${Date.now()}_${index + 1}.jpg`,
+          path: file.tempFilePath,
+          status: 'pending',
+          error: '',
+          description: '',
+          isRemote: false
+        }));
+        this.appendFilesToItem(id, normalized);
+      },
+      fail: (err) => {
+        console.error('拍照失败:', err);
+        if (err.errMsg && !err.errMsg.includes('cancel')) {
+          wx.showToast({
+            title: '拍照失败',
+            icon: 'none'
+          });
+        }
       }
     });
   },

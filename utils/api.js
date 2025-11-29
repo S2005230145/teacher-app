@@ -170,6 +170,7 @@ class ApiService {
           },
           success: (res) => {
             try {
+              console.log(res)
               const data = JSON.parse(res.data);
               resolve(data);
             } catch (error) {
@@ -260,7 +261,7 @@ cancelAudit(data){
 
   // 删除历史文件
   deleteHistoryFile({ filePath, description, contentId, userId }) {
-    return this.request("/front/tk/file/delete/", {
+    return this.request("/front/tk/file/upload/delete/", {
       method: 'POST',
       data: {
         filePath,

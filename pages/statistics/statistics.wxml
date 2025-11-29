@@ -43,7 +43,7 @@
   <view class="ranking-section">
     <view class="section-header">
       <text class="section-title">教师排名</text>
-      <text class="more-link" bindtap="viewAllRanking">查看全部 ></text>
+    <!--   <text class="more-link" bindtap="viewAllRanking">查看全部 ></text> -->
     </view>
     
     <view class="ranking-list">

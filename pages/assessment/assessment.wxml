@@ -7,7 +7,7 @@
     <view class="stats-grid">
       <view class="stat-item">
         <text class="stat-value">{{assessmentData.currentScore || 0}}</text>
-        <text class="stat-label">当前分数</text>
+        <text class="stat-label">审核后的最终评分</text>
       </view>
       <view class="stat-item">
         <text class="stat-value">{{assessmentData.rank || '-'}}</text>

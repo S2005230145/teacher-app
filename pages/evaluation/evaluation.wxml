@@ -37,7 +37,7 @@
     <!-- 当前页评分信息 -->
     <view class="score-banner" style="width:100%" wx:if="{{currentElement && currentElement.robotScore != null}}">
       <view class="score-banner__track">
-        <text class="score-banner__label">当前评测页评分</text>
+        <text class="score-banner__label">当前评测页机器评分</text>
         <text class="score-banner__value">{{currentElement.robotScore}}</text>
       </view>
     </view>
@@ -119,6 +119,10 @@
                   bindtap="chooseFile" 
                   data-id="{{item.id}}"
                   disabled="{{currentElement && (currentElement.completed === true || currentElement.completed === false)}}">上传文件</button>
+          <button class="file-btn camera-btn {{currentElement && (currentElement.completed === true || currentElement.completed === false) ? 'disabled' : ''}}" 
+                  bindtap="chooseImage" 
+                  data-id="{{item.id}}"
+                  disabled="{{currentElement && (currentElement.completed === true || currentElement.completed === false)}}">拍照</button>
           <text class="file-limit">已选 {{(item.files && item.files.length) || 0}} / {{maxFilesPerItem}}</text>
         </view>
 
@@ -149,10 +153,13 @@
       <!-- completed=true：评价已完成，完全锁住，显示最终得分 -->
       <view class="lock-overlay" wx:if="{{currentElement && currentElement.completed === true}}">
         <view class="lock-message compact">
-          <view class="final-score-display">
-            <text class="final-score-value">
-              {{currentElement.finalScore > 5000 ? '合格' : (currentElement.finalScore < -5000 ? '不合格' : currentElement.finalScore)}}
-            </text>
+          <view class="final-score-container {{currentElement.finalScore > 5000 ? 'score-pass' : (currentElement.finalScore < -5000 ? 'score-fail' : 'score-normal')}}">
+            <text class="final-score-title">最终得分</text>
+            <view class="final-score-display">
+              <text class="final-score-value">
+                {{currentElement.finalScore > 5000 ? '合格' : (currentElement.finalScore < -5000 ? '不合格' : currentElement.finalScore)}}
+              </text>
+            </view>
           </view>
         </view>
       </view>

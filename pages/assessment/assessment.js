@@ -9,7 +9,6 @@ Page({
 
   onLoad(options) {
     this.loadUserInfo();
-
     this.getAssessmentList(options.id);
   },
   async navigateToEvaluation(e) {
@@ -38,14 +37,13 @@ Page({
     try {
       // 模拟加载中
       wx.showLoading({ title: '加载中...' });
-
       const value=await apiService.getAssessmentList({
         'userId':this.data.userInfo.id,
         'kpiId':kpiId
       });
       const summary=await apiService.getSummary({
         'userId':this.data.userInfo.id,
-        'kpiId':1
+        'kpiId':kpiId
       })
       this.setData({
         summary: summary,
