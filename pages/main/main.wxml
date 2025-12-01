@@ -1,58 +1,117 @@
-<!-- pages/index/index.wxml -->
+<!-- pages/statistics/statistics.wxml -->
 <view class="container">
-  <!-- 功能按钮区域 -->
-  <view class="function-section" style="width:100%">
-    <view class="function-buttons">
-      <view class="function-item" bindtap="navigateTo" data-page="addEvaluation">
-        <view class="function-icon add-icon">
-          <text class="icon">✅</text>
+  <!-- 顶部统计概览 -->
+  <view class="stats-overview">
+    <view class="overview-card">
+      <text class="overview-value">{{averageScore||85.6}}</text>
+      <text class="overview-label">平均分</text>
+      <view class="trend up">↑ 2.3%</view>
+    </view>
+    <view class="overview-card">
+      <text class="overview-value">{{excellentRate||92}}%</text>
+      <text class="overview-label">优秀率</text>
+      <view class="trend up">↑ 5.1%</view>
+    </view>
+    <view class="overview-card">
+      <text class="overview-value">{{passRate||78.3}}</text>
+      <text class="overview-label">及格率</text>
+      <view class="trend down">↓ 1.2%</view>
+    </view>
+  </view>
+
+  <!-- 图表区域 -->
+<!--   <view class="charts-section">
+    <view class="section-header">
+      <text class="section-title">考核分数分布</text>
+    </view> -->
+    
+    <!-- 柱状图容器 -->
+<!--     <view class="chart-container">
+      <view class="bar-chart">
+        <view class="bar-item" wx:for="{{scoreDistribution}}" wx:key="range">
+          <view class="bar-wrapper">
+            <view class="bar" style="height: {{item.percentage}}%"></view>
+          </view>
+          <text class="bar-label">{{item.range}}</text>
+          <text class="bar-value">{{item.count}}人</text>
         </view>
-        <text class="function-text">新增考核</text>
       </view>
-      <view class="function-item" bindtap="navigateTo" data-page="viewData">
-        <view class="function-icon data-icon">
-          <text class="icon">💬</text>
+    </view>
+  </view> -->
+
+  <!-- 教师排名 -->
+  <view class="ranking-section">
+    <view class="section-header">
+      <text class="section-title">教师排名</text>
+    <!--   <text class="more-link" bindtap="viewAllRanking">查看全部 ></text> -->
+    </view>
+    
+    <view class="ranking-list">
+      <view class="ranking-item" wx:for="{{teacherRanking}}" wx:key="id">
+        <view class="rank-number {{index < 3 ? 'top-' + (index + 1) : ''}}">
+          {{index + 1}}
         </view>
-        <text class="function-text">查看数据</text>
-      </view>
-      <view class="function-item" bindtap="navigateTo" data-page="teacherFiles">
-        <view class="function-icon profile-icon">
-          <text class="icon">👤</text>
+        <view class="teacher-info">
+          <text class="teacher-name">{{item.name}}</text>
+          <text class="teacher-department">{{item.department}}</text>
         </view>
-        <text class="function-text">教师档案</text>
+        <view class="score-info">
+          <text class="score">{{item.score}}分</text>
+          <text class="score-change {{item.change >= 0 ? 'up' : 'down'}}">
+            {{item.change >= 0 ? '↑' : '↓'}} {{Math.abs(item.change)}}
+          </text>
+        </view>
       </view>
     </view>
   </view>
 
-  <!-- 数据概览 -->
-  <view class="data-section" style="width: 85vw;">
-    <text class="section-title">数据概览</text>
-    <view class="data-cards">
-      <view class="data-card card-1">
-        <view class="card-content">
-          <text class="data-value">22分</text>
-          <text class="data-label">优秀率</text>
+  <!-- 考核项目分析 -->
+<!--   <view class="analysis-section">
+    <view class="section-header">
+      <text class="section-title">考核项目分析</text>
+    </view>
+    
+    <view class="analysis-list">
+      <view class="analysis-item" wx:for="{{itemAnalysis}}" wx:key="name">
+        <view class="item-header">
+          <text class="item-name">{{item.name}}</text>
+          <text class="item-score">{{item.averageScore != null? item.averageScore:0}}分</text>
         </view>
-        <text class="trend">↑</text>
+        <view class="progress-bar">
+          <view class="progress" style="width: {{item.percentage}}%"></view>
+        </view>
+        <view class="item-footer">
+          <text class="item-label">平均分</text>
+          <text class="item-trend {{item.trend >= 0 ? 'up' : 'down'}}">
+            {{item.trend >= 0 ? '↑' : '↓'}} {{Math.abs(item.trend)}}%
+          </text>
+        </view>
       </view>
-      <view class="data-card card-2">
-        <view class="card-content">
-          <text class="data-value">24.0+</text>
-          <text class="data-label">平均分基础</text>
-        </view>
-        <text class="trend">↑</text>
+    </view>
+  </view> -->
+
+  <!-- 完成情况 -->
+  <view class="completion-section">
+    <view class="section-header">
+      <text class="section-title">完成情况</text>
+    </view>
+    <view class="completion-cards">
+      <view class="completion-card total">
+        <text class="completion-value">{{completionStatus.total}}</text>
+        <text class="completion-label">总人数</text>
       </view>
-      <view class="data-card card-3">
-        <view class="card-content">
-          <text class="data-value">16.0+</text>
-          <text class="data-label">平均分基础</text>
-        </view>
-        <text class="trend">↑</text>
+      <view class="completion-card pending">
+        <text class="completion-value">{{completionStatus.pending}}</text>
+        <text class="completion-label">未开始</text>
+      </view>
+      <view class="completion-card in-progress">
+        <text class="completion-value">{{completionStatus.progress}}</text>
+        <text class="completion-label">进行中</text>
+      </view>
+      <view class="completion-card completed">
+        <text class="completion-value">{{completionStatus.completed}}</text>
+        <text class="completion-label">已完成</text>
       </view>
     </view>
   </view>
-
-  <view style="height: 550rpx;">
-  </view>
-  
 </view>

@@ -20,26 +20,20 @@
       {
         "pagePath": "pages/main/main",
         "text": "首页",
-        "iconPath": "images/main.png",
-        "selectedIconPath": "images/main_d.png"
+        "iconPath": "images/main_d.png",
+        "selectedIconPath": "images/main.png"
       },
       {
         "pagePath": "pages/kpi/kpi",
         "text": "考核",
-        "iconPath": "images/exam.png",
-        "selectedIconPath": "images/exam_d.png"
-      },
-      {
-        "pagePath": "pages/statistics/statistics",
-        "text": "统计",
-        "iconPath": "images/statics.png",
-        "selectedIconPath": "images/statics_d.png"
+        "iconPath": "images/exam_d.png",
+        "selectedIconPath": "images/exam.png"
       },
       {
         "pagePath": "pages/profile/profile",
         "text": "我的",
-        "iconPath": "images/mine.png",
-        "selectedIconPath": "images/mine_d.png"
+        "iconPath": "images/mine_d.png",
+        "selectedIconPath": "images/mine.png"
       }
     ]
   },

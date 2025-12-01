@@ -44,6 +44,8 @@ App({
   globalData: {
     userInfo: null,
     apiConfig:null,
-    apiService:null
+    apiService:null,
+    // 全局待上传文件存储：{ pageKey: { contentId: [file1, file2, ...] } }
+    pendingUploadFiles: {}
   }
 })

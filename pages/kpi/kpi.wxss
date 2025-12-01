@@ -145,21 +145,23 @@
 }
 
 .kpi-items {
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 30rpx;
 }
 
 .kpi-item {
   padding: 30rpx;
-  border-bottom: 1rpx solid #f0f0f0;
-  transition: all 0.3s ease;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .kpi-item:active {
-  background: rgba(139, 95, 191, 0.05);
-}
-
-.kpi-item:last-child {
-  border-bottom: none;
+  transform: translateY(3rpx);
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.08);
 }
 
 .item-header {
@@ -301,10 +303,18 @@
   transition: width 0.5s ease;
 }
 
+.score-deadline-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+  flex-wrap: wrap;
+}
+
 .score-section {
   display: flex;
-  align-items: center;
-  margin-bottom: 20rpx;
+  align-items: baseline;
 }
 
 .score-label {
@@ -325,12 +335,6 @@
   color: #999;
 }
 
-.item-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .deadline {
   font-size: 22rpx;
   color: #999;
@@ -338,7 +342,7 @@
 
 .action-buttons {
   display: flex;
-  gap: 15rpx;
+  justify-content: flex-end;
 }
 
 .btn-detail, .btn-record {

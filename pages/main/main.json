@@ -1,7 +1,6 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "音小教师绩效考评",
+  "navigationBarTitleText": "绩效统计",
   "navigationBarBackgroundColor": "#60A5FA",
-  "navigationBarTextStyle": "white",
-  "enablePullDownRefresh": true
+  "navigationBarTextStyle": "white"
 }

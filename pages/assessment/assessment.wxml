@@ -38,7 +38,7 @@
         <view class="item-desc">{{item.description?item.description:""}}</view>
         <view class="item-progress">
           <view class="progress-bar">
-            <view class="progress-fill" style="width: {{item.progress}}%"></view>
+            <view class="progress-fill" style="width: {{item.progress + '%'}}"></view>
           </view>
           <text class="progress-text">{{item.progress}}%</text>
         </view>

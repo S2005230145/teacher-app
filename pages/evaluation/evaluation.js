@@ -103,15 +103,15 @@ Page({
     userInfo:{},
     currentLevel:{},
     canSubmit: false, // 初始锁定提交按钮
-    auditEnabled: false,
-    lastSubmitTimestamp: null,
+    isReview: false,
+    allLeaderGraded: false,
+    interactionLocked: false,
     levels: [
       { value: 'A', label: 'A (优秀)', score: 90 },
       { value: 'B', label: 'B (良好)', score: 80 },
       { value: 'C', label: 'C (合格)', score: 70 },
       { value: 'D', label: 'D (不合格)', score: 60 }
     ],
-    gradeData:{},
     drawerOpen:false,
     drawerWidth:520,
     maxFilesPerItem:5
@@ -127,17 +127,33 @@ Page({
   },
 
   // 页面显示时刷新数据（包括从其他页面返回时）
-  onShow() {
+/*   onShow() {
     if (this.data.indicatorId) {
       this.loadEvaluationList();
     }
+  }, */
+
+  computeInteractionLocked() {
+    return this.data.isReview === true;
+  },
+
+  refreshInteractionLock() {
+    const locked = this.computeInteractionLocked();
+    if (locked !== this.data.interactionLocked) {
+      this.setData({
+        interactionLocked: locked
+      });
+    }
+  },
+
+  isReadOnly() {
+    return this.data.interactionLocked;
   },
 
   // 选择等级
   selectLevel(e) {
     // 如果已完成或待审核，不允许操作
-    const currentElement = this.data.currentElement;
-    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+    if (this.isReadOnly()) {
       return;
     }
     const level = e.currentTarget.dataset.level;
@@ -165,33 +181,35 @@ Page({
   // 1. 没有考核等级的（count类型），完成次数至少1次
   // 2. 有考核等级的（非count类型），需要选择考核等级
   hasEvaluationAction() {
-    const { contents = [], currentLevel = {}, currentTab = 0 } = this.data;
-    const currentTabItems = Array.isArray(contents[currentTab]) ? contents[currentTab] : [];
-    if (!currentTabItems.length) {
+    const { contents = [], currentLevel = {} } = this.data;
+    if (!Array.isArray(contents) || contents.length === 0) {
       return false;
     }
     // 检查是否有至少一项完成
-    return currentTabItems.some(item => {
-      const itemData = item?.data || {};
-      const itemType = itemData.type;
-      
-      // 没有考核等级的（count类型）：完成次数至少1次
-      if (itemType === 'count') {
-        return Number(item.time || 0) >= 1;
-      }
-      
-      // 有考核等级的（非count类型）：需要选择考核等级
-      const level = currentLevel[item.id];
-      return level && level.name;
+    return contents.some(tabItems => {
+      const items = Array.isArray(tabItems) ? tabItems : [];
+      return items.some(item => {
+        const itemData = item?.data || {};
+        const itemType = itemData.type;
+
+        // 没有考核等级的（count类型）：完成次数至少1次
+        if (itemType === 'count') {
+          return Number(item.time || 0) >= 1;
+        }
+
+        // 有考核等级的（非count类型）：需要选择考核等级
+        const level = currentLevel[item.id];
+        return level && level.name;
+      });
     });
   },
 
   // 更新按钮状态：至少有一项操作时才可提交
   updateButtonState() {
     const hasAction = this.hasEvaluationAction();
+    const readOnly = this.isReadOnly();
     this.setData({
-      canSubmit: hasAction,
-      auditEnabled: hasAction && !!this.data.lastSubmitTimestamp
+      canSubmit: hasAction && !readOnly
     });
   },
 
@@ -201,6 +219,9 @@ Page({
         'indicatorId':this.data.indicatorId,
         'userId':this.data.userInfo.id
       });
+      console.log(this.data.indicatorId,66)
+      console.log(this.data.userInfo.id,666)
+
       const valueTest=await apiService.getEvaluationListNew({
         'indicatorId':this.data.indicatorId,
         'userId':this.data.userInfo.id
@@ -277,7 +298,14 @@ Page({
           return clone;
         });
       });
-      const formatTabs = valueTest.tabs || [];
+      const formatTabs = Array.isArray(valueTest.tabs) ? valueTest.tabs : [];
+      const allTabsReviewed = formatTabs.length > 0
+        ? formatTabs.every(tab => tab && tab.completed === true)
+        : false;
+      const allLeaderGraded = formatTabs.length > 0
+        ? formatTabs.every(tab => tab && tab.isLeaderGrade === true)
+        : false;
+      console.log(allTabsReviewed,allLeaderGraded)
       const defaultTab = 0;
       const currentTab = normalizedContents[defaultTab] ? defaultTab : 0;
       const currentTabInfo = formatTabs[currentTab] || null;
@@ -301,10 +329,6 @@ Page({
         });
       });
 
-      // 保存当前的 lastSubmitTimestamp 和 auditEnabled，避免刷新时丢失
-      const preservedLastSubmitTimestamp = this.data.lastSubmitTimestamp;
-      const preservedAuditEnabled = this.data.auditEnabled;
-
       this.setData({
         tabs: formatTabs,
         contents: normalizedContents,
@@ -312,11 +336,11 @@ Page({
         currentContents: normalizedContents[currentTab] || [],
         currentElement: currentTabInfo,
         currentLevel: restoredLevels,
-        // 保留之前的状态，如果存在的话
-        lastSubmitTimestamp: preservedLastSubmitTimestamp || null,
-        auditEnabled: preservedAuditEnabled || false
+        isReview: allTabsReviewed,
+        allLeaderGraded: allLeaderGraded
       });
-      // 初始化按钮状态（会重新计算 auditEnabled）
+      this.refreshInteractionLock();
+      // 初始化按钮状态
       this.updateButtonState();
     }catch(e){
       console.error(e);
@@ -427,11 +451,10 @@ Page({
     this.setData({
       currentTab: index,
       currentContents: this.data.contents[index],
-      currentElement: this.data.tabs[index],
-      auditEnabled: false,
-      lastSubmitTimestamp: null
+      currentElement: this.data.tabs[index]
     });
     console.log(this.data.currentElement);
+    this.refreshInteractionLock();
 
     if (this.data.drawerOpen) {
       this.closeDrawer();
@@ -443,8 +466,7 @@ Page({
   // 分数输入
   onScoreInput(e) {
     // 如果已完成或待审核，不允许操作
-    const currentElement = this.data.currentElement;
-    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+    if (this.isReadOnly()) {
       return;
     }
     const id = e.currentTarget.dataset.id;
@@ -461,8 +483,7 @@ Page({
   // 减少分数
   decreaseScore(e) {
     // 如果已完成或待审核，不允许操作
-    const currentElement = this.data.currentElement;
-    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+    if (this.isReadOnly()) {
       return;
     }
     const id = e.currentTarget.dataset.id;
@@ -480,8 +501,7 @@ Page({
   // 增加分数
   increaseScore(e) {
     // 如果已完成或待审核，不允许操作
-    const currentElement = this.data.currentElement;
-    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+    if (this.isReadOnly()) {
       return;
     }
     const id = e.currentTarget.dataset.id;
@@ -569,8 +589,7 @@ Page({
 
   onDescInput(e) {
     // 如果已完成或待审核，不允许操作
-    const currentElement = this.data.currentElement;
-    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+    if (this.isReadOnly()) {
       return;
     }
     const { id } = e.currentTarget.dataset;
@@ -600,21 +619,69 @@ Page({
     }
   },
 
-  // 提交评价
-  submitEvaluation() {
-    wx.showModal({
-      title: '提交确认',
-      content: '确定要提交评价结果吗？',
-      success: (res) => {
-        if (res.confirm) {
-          this.putGrade();
+  buildGradePayload() {
+    const { contents = [], currentLevel = {}, userInfo = {} } = this.data;
+    const tcs = [];
+    contents.forEach(tabItems => {
+      (tabItems || []).forEach(item => {
+        if (!item) {
+          return;
         }
-      }
+        let jsonObject = {};
+        const jsonParam = item?.type?.jsonParam;
+        if (jsonParam) {
+          try {
+            jsonObject = typeof jsonParam === 'string' ? JSON.parse(jsonParam) : jsonParam;
+          } catch (err) {
+            console.warn('解析 type.jsonParam 失败:', err, item);
+          }
+        }
+        tcs.push({
+          contentId: item.id,
+          time: item.time != null ? item.time : 0,
+          type: jsonObject.type || item?.data?.type || '',
+          var: currentLevel[item.id] ? currentLevel[item.id] : {}
+        });
+      });
     });
+    return {
+      userId: userInfo.id,
+      tcs
+    };
+  },
+
+  async saveAllEvaluations() {
+    const payload = this.buildGradePayload();
+    if (!payload.userId) {
+      throw new Error('用户信息丢失，请重新登录');
+    }
+    if (!payload.tcs.length) {
+      throw new Error('暂无可提交的评价内容');
+    }
+    const res = await apiService.grade({
+      data: payload
+    });
+    if (res.code !== 200) {
+      throw new Error(res.message || res.reason || '提交评价失败');
+    }
   },
 
   //提交审核
   submitAudit(){
+    if (this.isReadOnly()) {
+      wx.showToast({
+        title: '已审核，无需重复提交',
+        icon: 'none'
+      });
+      return;
+    }
+    if (!this.data.canSubmit) {
+      wx.showToast({
+        title: '请先完成评价后再提交',
+        icon: 'none'
+      });
+      return;
+    }
     wx.showModal({
       title: '提交确认',
       content: '确定要提交评价结果进行审核吗？',
@@ -626,92 +693,52 @@ Page({
     });
   },
 
-  async putGrade(){
-    try{
-      await this.uploadAllFiles();
-      let tcs = [];
-      console.log(this.data.currentLevel)
-      this.data.currentContents.forEach(value=>{
-        const jsonObject = JSON.parse(value.type.jsonParam);
-        const item = {
-          "contentId": value.id,
-          "time": value.time != null ? value.time : 0,
-          "type":jsonObject.type,
-          // TODO 小程序动态
-          "var": (this.data.currentLevel && this.data.currentLevel[value.id]) ? this.data.currentLevel[value.id] : {}
-        };
-
-        console.log(item);
-        
-        tcs.push(item);
-      });
-      this.setData({
-        gradeData:{
-          "userId":this.data.userInfo.id,
-          "tcs":tcs
-        },
-      });
-      console.log(this.data.gradeData)
-      const value=await apiService.grade({
-        data: this.data.gradeData
-      });
-      if(value.code==200){
-        wx.showToast({
-          title: '提交成功',
-          icon: 'success'
-        });
-        this.setData({ lastSubmitTimestamp: Date.now(), auditEnabled: true });
-        // 刷新页面数据
-        this.loadEvaluationList();
-/*         wx.navigateTo({
-          url: '/pages/assessment/assessment'
-        }); */
-      }else{
-        wx.showToast({
-          title: '提交失败',
-          icon: 'fail'
-        });
-      }
-    }catch(e){
-      console.error(e);
-      wx.showToast({
-        title: e.message || '提交失败',
-        icon: 'none'
-      });
-    }
-  },
-
   async putAudit(){
     try{
+      wx.showLoading({
+        title: '提交中...',
+        mask: true
+      });
       await this.uploadAllFiles();
+      await this.saveAllEvaluations();
       const value=await apiService.getLeadersAll();
-      console.log(value,666666)
-      console.log(this.data.currentElement)
-      const allIds = (value.data || []).map(item => item.id);
-      const post=await apiService.postAudit({
-        "userId":this.data.userInfo.id,
-        "LeaderIds":allIds.join(","),
-        "elementId":this.data.currentElement ? this.data.currentElement.id : null
-      })
-      if(post.code==200){
-        wx.showToast({
-          title: '提交审核成功',
-          icon: 'success'
-        });
-        this.setData({ auditEnabled: false });
-        wx.navigateBack()   
-      }else{
-        wx.showToast({
-          title: '提交审核失败',
-          icon: 'fail'
-        });
+      const allIds = (value.data || []).map(item => item.id).filter(id => id != null);
+      if (!allIds.length) {
+        throw new Error('暂无可通知的审核人');
       }
+      const elementIds = (this.data.tabs || []).map(item => item.id).filter(id => id != null);
+      if (!elementIds.length) {
+        throw new Error('暂无可提交的评价要素');
+      }
+      for (const elementId of elementIds) {
+        const post=await apiService.postAudit({
+          "userId":this.data.userInfo.id,
+          "LeaderIds":allIds.join(","),
+          "elementId":elementId
+        });
+        if (post.code !== 200) {
+          throw new Error(post.message || post.reason || '提交审核失败');
+        }
+      }
+      wx.showToast({
+        title: '提交审核成功',
+        icon: 'success'
+      });
+      this.setData({
+        isReview: true,
+        allLeaderGraded: true
+      });
+      this.refreshInteractionLock();
+      this.updateButtonState();
+      this.loadEvaluationList();
     }catch(e){
       console.error(e);
       wx.showToast({
         title: e.message || '提交审核失败',
         icon: 'none'
       });
+    } finally {
+      wx.hideLoading();
     }
   },
 
@@ -784,8 +811,7 @@ Page({
 
   chooseFile(e) {
     // 如果已完成或待审核，不允许操作
-    const currentElement = this.data.currentElement;
-    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+    if (this.isReadOnly()) {
       return;
     }
     const id = e.currentTarget?.dataset?.id;
@@ -825,8 +851,7 @@ Page({
   // 拍照上传
   chooseImage(e) {
     // 如果已完成或待审核，不允许操作
-    const currentElement = this.data.currentElement;
-    if (currentElement && (currentElement.completed === true || currentElement.completed === false)) {
+    if (this.isReadOnly()) {
       return;
     }
     const id = e.currentTarget?.dataset?.id;
@@ -1026,7 +1051,7 @@ Page({
     contents.forEach(tabContents => {
       tabContents.forEach(item => {
         const fileList = Array.isArray(item.files) ? item.files : [];
-        console.log(fileList)
+        //console.log(fileList)
         fileList.forEach((file, index) => {
           // 收集需要删除的历史文件（标记为删除的远程文件）
           if (file.isRemote && file.status === 'deleted') {
@@ -1119,6 +1144,7 @@ Page({
               contentId: contentId,
               userId: userInfo.id
             });
+            console.log(res,6456464)
             if (res.code === 200) {
               // 所有文件上传成功
               items.forEach(item => {

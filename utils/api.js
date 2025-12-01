@@ -134,6 +134,8 @@ class ApiService {
   uploadEvaluationFile({ filePath, description, contentId, userId }) {
     const url = `${this.baseURL}/front/tk/file/upload/add/`;
 
+    console.log(filePath,6666)
+
     // 将 filePath 统一处理为数组，支持字符串（带逗号）、单个路径或数组
     const normalizeFilePaths = (input) => {
       if (!input) {
@@ -150,10 +152,13 @@ class ApiService {
     };
 
     const filePaths = normalizeFilePaths(filePath);
+
+    console.log(filePaths)
+
     if (!filePaths.length) {
       return Promise.reject(new Error('没有有效的文件路径'));
     }
-
+''
     const uploadSingleFile = (singleFilePath) => {
       return new Promise((resolve, reject) => {
         wx.uploadFile({

@@ -228,12 +228,14 @@ picker {
   padding: 10rpx 20rpx;
   margin-left: 20rpx;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.eye-text {
-  font-size: 26rpx;
-  color: #60A5FA;
-  white-space: nowrap;
+.eye-icon-image {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 
