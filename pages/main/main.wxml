@@ -53,7 +53,7 @@
         </view>
         <view class="teacher-info">
           <text class="teacher-name">{{item.name}}</text>
-          <text class="teacher-department">{{item.department}}</text>
+          <text class="teacher-department">{{item.department ? item.department : ''}}</text>
         </view>
         <view class="score-info">
           <text class="score">{{item.score}}分</text>

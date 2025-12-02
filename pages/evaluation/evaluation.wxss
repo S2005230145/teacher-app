@@ -269,7 +269,8 @@
   margin-bottom: 15rpx;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 16rpx;
 }
 
 .item-title {
@@ -277,6 +278,12 @@
   font-weight: bold;
   color: #333;
   display: block;
+}
+
+.item-score{
+  margin-top: 0;
+  font-size: 24rpx;
+  color: #999;
 }
 
 .item-desc {

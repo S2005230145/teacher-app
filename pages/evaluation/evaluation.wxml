@@ -35,12 +35,14 @@
     </view>
 
     <!-- 当前页评分信息 -->
+    <!--
     <view class="score-banner" style="width:100%" wx:if="{{currentElement && currentElement.robotScore != null}}">
       <view class="score-banner__track">
         <text class="score-banner__label">当前评测页机器评分</text>
         <text class="score-banner__value">{{currentElement.robotScore}}</text>
       </view>
     </view>
+    -->
 
 
     <!-- 评价内容区域 - 双向绑定 -->
@@ -49,6 +51,9 @@
         <view wx:for="{{currentContents}}" wx:key="id" class="evaluation-item">
         <view class="item-header">
           <text class="item-title">{{item.title}}</text>
+          <text class="item-score" wx:if="{{item.score != null}}">
+            权值：{{item.score}}（当前得分：{{item.totalScore || 0}}）
+          </text>
           <icon type="info" size="32"
                 class="info-icon"
                 data-title="{{item.title}}"
@@ -56,9 +61,8 @@
                 bindtap="showDescription" />
         </view>
 
-        <!-- 选择器类型 -->
-        <!-- 完成次数 - 所有类型都显示 -->
-        <view class="scoring-area">
+        <!-- 完成次数 - 仅当需要上传材料时显示 -->
+        <view class="scoring-area" wx:if="{{item.isNeedUploadFile}}">
           <text class="score-label">完成次数：</text>
           <view class="score-controls">
             <!-- count类型：可以修改（已完成或待审核状态时禁用） -->
@@ -102,7 +106,8 @@
             </view>
         </view>
 
-        <view class="upload-section">
+        <!-- 材料说明 + 上传文件区域：仅当需要上传材料时显示 -->
+        <view class="upload-section" wx:if="{{item.isNeedUploadFile}}">
           <view class="desc-wrapper">
             <textarea class="desc-input"
                       placeholder="请输入材料说明（选填，最多200字）"
@@ -153,11 +158,28 @@
 
     <!-- 底部按钮 -->
     <view class="footer">
-      <button class="btn audit-btn {{(!interactionLocked && canSubmit) ? '' : 'disabled'}}"
+      <!-- 撤销审核按钮：有领导评分且所有 completed 为 0 -->
+      <button wx:if="{{showWithdraw}}"
+              class="btn audit-btn"
+              bindtap="withdrawAudit">
+        撤销审核
+      </button>
+
+      <!-- 已锁定但不可撤销：显示已审核，按钮不可点 -->
+      <button wx:elif="{{isReview}}"
+              class="btn audit-btn disabled"
+              disabled="true">
+        已审核
+      </button>
+
+      <!-- 正常提交审核按钮 -->
+      <button wx:else
+              class="btn audit-btn {{(!interactionLocked && canSubmit) ? '' : 'disabled'}}"
               bindtap="submitAudit"
               disabled="{{interactionLocked || !canSubmit}}">
-        {{isReview ? '已审核' : '提交审核'}}
+        提交审核
       </button>
+
       <button class="btn back-btn" bindtap="navigateBack">返回</button>
     </view>
   </view>

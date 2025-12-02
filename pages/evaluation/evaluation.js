@@ -27,6 +27,15 @@ function removeUrlPrefix(fullUrl = '') {
   // 如果已经是相对路径，直接返回
   return String(fullUrl).replace(/^\/+/, '');
 }
+// 安全乘法，避免浮点精度问题（保留两位小数）
+function multiplyScore(a, b) {
+  const x = Number(a) || 0;
+  const y = Number(b) || 0;
+  // 先放大再缩小，降低精度误差，再用 toFixed 控制小数位
+  const result = Math.round(x * 1000) * Math.round(y * 1000) / 1000000;
+  return Number(result.toFixed(2));
+}
+
 Page({
   data: {
     // 标签数据
@@ -105,6 +114,7 @@ Page({
     canSubmit: false, // 初始锁定提交按钮
     isReview: false,
     allLeaderGraded: false,
+    showWithdraw: false,
     interactionLocked: false,
     levels: [
       { value: 'A', label: 'A (优秀)', score: 90 },
@@ -288,6 +298,10 @@ Page({
           delete clone.filePath;
           delete clone.uploadStatus;
           delete clone.uploadError;
+          // 如果后端未下发 isNeedUploadFile，则默认需要上传材料
+          if (clone.isNeedUploadFile === undefined || clone.isNeedUploadFile === null) {
+            clone.isNeedUploadFile = true;
+          }
           // 如果有考核等级（非count类型），完成次数默认为1
           const itemType = clone.data?.type;
           if (itemType && itemType !== 'count') {
@@ -295,17 +309,28 @@ Page({
               clone.time = 1;
             }
           }
+
+          // 计算初始当前得分：权值 * 完成次数
+          const baseScore = clone.score;
+          const count = clone.time;
+          clone.totalScore = multiplyScore(baseScore, count);
+
           return clone;
         });
       });
       const formatTabs = Array.isArray(valueTest.tabs) ? valueTest.tabs : [];
-      const allTabsReviewed = formatTabs.length > 0
-        ? formatTabs.every(tab => tab && tab.completed === true)
+      // 是否有任意 tab 已提交或已被领导评分，用于锁定交互
+      const anyTabCompleted = formatTabs.length > 0
+        ? formatTabs.some(tab => tab && tab.completed === true)
         : false;
-      const allLeaderGraded = formatTabs.length > 0
-        ? formatTabs.every(tab => tab && tab.isLeaderGrade === true)
+      const anyLeaderGraded = formatTabs.length > 0
+        ? formatTabs.some(tab => tab && tab.isLeaderGrade === true)
         : false;
-      console.log(allTabsReviewed,allLeaderGraded)
+      // 只要有一个 completed=1 或 isLeaderGrade=1 就锁定
+      const shouldLock = anyTabCompleted || anyLeaderGraded;
+      // 撤销审核按钮条件：只要有一个 isLeaderGrade=1，且所有 completed=0
+      const canWithdraw = anyLeaderGraded && !anyTabCompleted;
+      console.log('tabs 状态:', { anyTabCompleted, anyLeaderGraded, shouldLock, canWithdraw });
       const defaultTab = 0;
       const currentTab = normalizedContents[defaultTab] ? defaultTab : 0;
       const currentTabInfo = formatTabs[currentTab] || null;
@@ -336,8 +361,9 @@ Page({
         currentContents: normalizedContents[currentTab] || [],
         currentElement: currentTabInfo,
         currentLevel: restoredLevels,
-        isReview: allTabsReviewed,
-        allLeaderGraded: allLeaderGraded
+        isReview: shouldLock,
+        allLeaderGraded: anyLeaderGraded,
+        showWithdraw: canWithdraw
       });
       this.refreshInteractionLock();
       // 初始化按钮状态
@@ -535,7 +561,7 @@ Page({
 
   updateItemFields(id, fields) {
     const { contents, currentTab } = this.data;
-    // 如果尝试修改time字段，检查是否有考核等级
+    // 如果尝试修改time字段，检查是否有考核等级，并同步更新当前得分
     if (fields.time !== undefined) {
       const targetItem = this.findItemById(id);
       const itemData = targetItem?.data || {};
@@ -543,6 +569,10 @@ Page({
       if (itemData.type && itemData.type !== 'count') {
         fields.time = 1;
       }
+      // 计算当前得分：权值 * 完成次数（使用安全乘法避免精度问题）
+      const baseScore = targetItem?.score;
+      const count = fields.time;
+      fields.totalScore = multiplyScore(baseScore, count);
     }
     const updatedContents = contents.map(tabContents =>
       tabContents.map(item => item.id === id ? { ...item, ...fields } : item)
@@ -620,50 +650,59 @@ Page({
   },
 
   buildGradePayload() {
-    const { contents = [], currentLevel = {}, userInfo = {} } = this.data;
+    const { contents = [], currentLevel = {}, userInfo = {}, indicatorId } = this.data;
     const tcs = [];
     contents.forEach(tabItems => {
       (tabItems || []).forEach(item => {
         if (!item) {
           return;
         }
-        let jsonObject = {};
-        const jsonParam = item?.type?.jsonParam;
-        if (jsonParam) {
-          try {
-            jsonObject = typeof jsonParam === 'string' ? JSON.parse(jsonParam) : jsonParam;
-          } catch (err) {
-            console.warn('解析 type.jsonParam 失败:', err, item);
-          }
+        const itemType = item?.data?.type || '';
+        const count = Number(item.time != null ? item.time : 0);
+        let score = 0;
+
+        if (itemType === 'count') {
+          // 计数类：得分 = 权值 * 完成次数，这里直接给权值，后端会自己计算
+          score = item.score;
+        } else {
+          // 等级类：得分来自当前选择的等级
+          const level = currentLevel[item.id];
+          score = Number(level?.score || 0);
         }
+
+        // 跳过完全无操作的项目
+        if (!count && !score) {
+          return;
+        }
+
+        // 统一转换为带两位小数的字符串，保证 JSON 中是浮点格式（如 "1.00"）
+        const scoreStr = Number(score).toFixed(2);
         tcs.push({
           contentId: item.id,
-          time: item.time != null ? item.time : 0,
-          type: jsonObject.type || item?.data?.type || '',
-          var: currentLevel[item.id] ? currentLevel[item.id] : {}
+          time: count,
+          score: scoreStr
         });
       });
     });
     return {
       userId: userInfo.id,
+      indicatorId,
       tcs
     };
   },
 
-  async saveAllEvaluations() {
+  saveAllEvaluations() {
     const payload = this.buildGradePayload();
     if (!payload.userId) {
       throw new Error('用户信息丢失，请重新登录');
     }
+    if (!payload.indicatorId) {
+      throw new Error('指标信息缺失，无法提交');
+    }
     if (!payload.tcs.length) {
       throw new Error('暂无可提交的评价内容');
     }
-    const res = await apiService.grade({
-      data: payload
-    });
-    if (res.code !== 200) {
-      throw new Error(res.message || res.reason || '提交评价失败');
-    }
+    return payload;
   },
 
   //提交审核
@@ -700,25 +739,31 @@ Page({
         mask: true
       });
       await this.uploadAllFiles();
-      await this.saveAllEvaluations();
+      const payload = this.saveAllEvaluations();
+      console.log(payload,4646);
       const value=await apiService.getLeadersAll();
+      console.log(value,4646);
       const allIds = (value.data || []).map(item => item.id).filter(id => id != null);
       if (!allIds.length) {
         throw new Error('暂无可通知的审核人');
       }
-      const elementIds = (this.data.tabs || []).map(item => item.id).filter(id => id != null);
-      if (!elementIds.length) {
-        throw new Error('暂无可提交的评价要素');
-      }
-      for (const elementId of elementIds) {
-        const post=await apiService.postAudit({
-          "userId":this.data.userInfo.id,
-          "LeaderIds":allIds.join(","),
-          "elementId":elementId
-        });
-        if (post.code !== 200) {
-          throw new Error(post.message || post.reason || '提交审核失败');
-        }
+
+      //console.log(userId);
+      console.log(allIds);
+      console.log(payload.indicatorId);
+      console.log(payload.tcs);
+
+      console.log(this.data.userInfo.id,466464);
+
+      const post = await apiService.postAudit({
+        userId: this.data.userInfo.id,
+        LeaderIds: allIds.join(","),
+        indicatorId: payload.indicatorId,
+        tcs: payload.tcs
+      });
+      console.log(post,4646); 
+      if (post.code !== 200) {
+        throw new Error(post.message || post.reason || '提交审核失败');
       }
       wx.showToast({
         title: '提交审核成功',
@@ -743,53 +788,66 @@ Page({
   },
 
 
-  // 取消审核
-  cancelAudit() {
+  // 撤销审核：当有领导评分但未完成时，允许撤销所有已评分要素
+  withdrawAudit() {
     wx.showModal({
-      title: '取消审核确认',
-      content: '确定要取消审核吗？取消后可以重新提交评价。',
+      title: '撤销审核确认',
+      content: '确定要撤销审核吗？撤销后可重新编辑并再次提交。',
       success: (res) => {
         if (res.confirm) {
-          this.doCancelAudit();
+          this.doWithdrawAudit();
         }
       }
     });
   },
 
-  async doCancelAudit() {
-    try {
-      wx.showLoading({
-        title: '处理中...',
-        mask: true
-      });
-      
-      const res = await apiService.cancelAudit({
-        elementId: this.data.currentElement ? this.data.currentElement.id : null,
-        userId: this.data.userInfo.id
-      });
-      
-      wx.hideLoading();
-      
-      if (res.code === 200) {
-        wx.showToast({
-          title: '取消审核成功',
-          icon: 'success'
-        });
-        // 重新加载数据
-        this.loadEvaluationList();
-      } else {
-        wx.showToast({
-          title: res.message || '取消审核失败',
-          icon: 'none'
-        });
-      }
-    } catch (e) {
-      wx.hideLoading();
-      console.error(e);
+  async doWithdrawAudit() {
+    const { tabs = [], userInfo = {} } = this.data;
+    const userId = userInfo?.id;
+    if (!userId) {
       wx.showToast({
-        title: e.message || '取消审核失败',
+        title: '用户信息缺失，请重新登录',
         icon: 'none'
       });
+      return;
+    }
+    const leaderGradedIds = (tabs || [])
+      .filter(tab => tab && tab.isLeaderGrade === true && tab.id != null)
+      .map(tab => tab.id);
+    if (!leaderGradedIds.length) {
+      wx.showToast({
+        title: '暂无可撤销的评价要素',
+        icon: 'none'
+      });
+      return;
+    }
+    try {
+      wx.showLoading({
+        title: '撤销中...',
+        mask: true
+      });
+      for (const elementId of leaderGradedIds) {
+        const res = await apiService.cancelAudit({
+          elementId,
+          userId
+        });
+        if (res.code !== 200) {
+          throw new Error(res.message || '撤销审核失败');
+        }
+      }
+      wx.showToast({
+        title: '撤销审核成功',
+        icon: 'success'
+      });
+      this.loadEvaluationList();
+    } catch (e) {
+      console.error(e);
+      wx.showToast({
+        title: e.message || '撤销审核失败',
+        icon: 'none'
+      });
+    } finally {
+      wx.hideLoading();
     }
   },
 
