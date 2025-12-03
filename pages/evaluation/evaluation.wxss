@@ -117,7 +117,14 @@
   border-radius: 999rpx;
   background: #fff;
   box-shadow: 0 6rpx 18rpx rgba(96,165,250,0.25);
-  margin: 10rpx 0 20rpx;
+  position: fixed;
+  left: 40rpx;
+  top: 40rpx;
+  z-index: 2600;
+}
+
+.drawer-trigger__spacer{
+  height: 110rpx;
 }
 
 .trigger-icon{
@@ -260,30 +267,38 @@
 /* 评价项 - 完全贴合 */
 .evaluation-item {
   background: white;
-  padding: 30rpx;
+  padding: 40rpx 30rpx;
   margin: 0;
   border-bottom: 1rpx solid #f0f0f0;
 }
 
 .item-header {
-  margin-bottom: 15rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.item-title-wrapper {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 16rpx;
+  gap: 12rpx;
 }
 
 .item-title {
-  font-size: 32rpx;
+  font-size: 36rpx;
   font-weight: bold;
   color: #333;
-  display: block;
+  flex: 1;
+  min-width: 0;
 }
 
 .item-score{
-  margin-top: 0;
-  font-size: 24rpx;
-  color: #999;
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
+  display: block;
+  white-space: nowrap;
 }
 
 .item-desc {
@@ -295,28 +310,32 @@
 }
 
 .info-icon {
-  color: #60A5FA;
+  color: #999;
+  flex-shrink: 0;
 }
 
 /* 评分区域 */
 .scoring-area {
   display: flex;
-  margin-top: 20rpx;
+  margin-top: 30rpx;
   align-items: center;
-  justify-content: space-between;
+  gap: 20rpx;
 }
 
 .score-label {
-  font-size: 28rpx;
+  font-size: 33rpx;
   color: #333;
-  font-weight: 500;
+  font-weight: 700;
+  margin-right: 240rpx;
+  min-width: 160rpx;
 }
 
 .score-controls {
   display: flex;
-  width:480rpx;
+  width: calc(100% - 400rpx);
   align-items: center;
   gap: 15rpx;
+  flex-shrink: 0;
 }
 .scoring-area-rad {
   display: flex;
@@ -446,22 +465,26 @@
   height: 70rpx;
   border: 2rpx solid;
   background: white;
-  font-size: 24rpx;
+  font-size: 32rpx;
+  font-weight: bold;
   border-radius: 8rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
+  line-height: 1;
 }
 
 .score-btn.minus {
-  border-color: #ff4d4f;
-  color: #ff4d4f;
+  border-color: #60A5FA;
+  color: #60A5FA;
+  background: white;
 }
 
 .score-btn.plus {
   border-color: #60A5FA;
-  color: #60A5FA;
+  color: #fff;
+  background: #60A5FA;
 }
 
 .score-btn.disabled {
@@ -472,18 +495,16 @@
 }
 
 .score-input {
-  width: 380rpx;
-  height: 60rpx;
-  border: 2rpx solid #ddd;
-  border-radius: 8rpx;
+  width: 100rpx;
+  height: 70rpx;
   text-align: center;
-  font-size: 28rpx;
-}
-
-.score-input[disabled] {
-  background: #f5f5f5;
-  color: #999;
-  opacity: 0.6;
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+  flex-shrink: 0;
+  display: inline-block;
+  line-height: 70rpx;
+  box-sizing: border-box;
 }
 
 .score-unit {
@@ -523,9 +544,9 @@
 }
 
 .upload-section {
-  margin-top: 20rpx;
-  padding-top: 20rpx;
-  border-top: 1rpx dashed #eee;
+  margin-top: 30rpx;
+  padding-top: 30rpx;
+  border-top: 1rpx solid #f0f0f0;
   display: flex;
   flex-direction: column;
   gap: 20rpx;
@@ -535,26 +556,35 @@
   background: #f9f9fb;
   border: 1rpx solid #e5e5ef;
   border-radius: 12rpx;
-  padding: 10rpx;
+  padding: 20rpx;
 }
 
 .desc-input {
-  min-height: 80rpx;
-  font-size: 26rpx;
+  min-height: 120rpx;
+  font-size: 28rpx;
   color: #333;
   width: 100%;
+  line-height: 1.6;
+  background: transparent;
 }
 
 .file-row {
   display: flex;
-  align-items: center;
-  gap: 16rpx;
+  align-items: flex-start;
+  gap: 20rpx;
   flex-wrap: wrap;
+  margin-top: 20rpx;
+  width: 100%;
 }
 
 .file-limit{
-  font-size: 24rpx;
+  font-size: 26rpx;
   color: #999;
+  width: 100%;
+  text-align: left;
+  margin-top: 15rpx;
+  padding: 0;
+  flex-basis: 100%;
 }
 
 .files-list{
@@ -635,15 +665,19 @@
   background: #60A5FA;
   color: #fff;
   border: none;
-  padding: 10rpx 26rpx;
+  padding: 20rpx 40rpx;
   border-radius: 10rpx;
-  font-size: 26rpx;
-  box-shadow: 0 8rpx 16rpx rgba(96,165,250,0.3);
+  font-size: 28rpx;
+  font-weight: 500;
+  box-shadow: 0 4rpx 12rpx rgba(96,165,250,0.25);
+  flex: 1;
+  min-height: 70rpx;
+  line-height: 1.2;
 }
 
 .file-btn.camera-btn {
   background: #52c41a;
-  box-shadow: 0 8rpx 16rpx rgba(82,196,26,0.3);
+  box-shadow: 0 4rpx 12rpx rgba(82,196,26,0.25);
 }
 
 .file-name {

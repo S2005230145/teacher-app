@@ -40,11 +40,11 @@
   </view> -->
 
   <!-- 教师排名 -->
-  <view class="ranking-section">
+<!--   <view class="ranking-section">
     <view class="section-header">
-      <text class="section-title">教师排名</text>
+      <text class="section-title">教师排名</text> -->
     <!--   <text class="more-link" bindtap="viewAllRanking">查看全部 ></text> -->
-    </view>
+<!--     </view>
     
     <view class="ranking-list">
       <view class="ranking-item" wx:for="{{teacherRanking}}" wx:key="id">
@@ -63,7 +63,7 @@
         </view>
       </view>
     </view>
-  </view>
+  </view> -->
 
   <!-- 考核项目分析 -->
 <!--   <view class="analysis-section">

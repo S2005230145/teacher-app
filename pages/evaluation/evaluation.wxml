@@ -18,7 +18,7 @@
               data-index="{{index}}">
           <text class="drawer-tab__text">{{item.name != null ? item.name : ''}}</text>
           <text class="drawer-tab__score" wx:if="{{item.robotScore != null}}">
-            {{item.robotScore}}
+            {{item.robotScore >= 5000 ? '合格' : (item.robotScore <= -5000 ? '不合格' : (item.robotScore != null ? item.robotScore : 0))}}
           </text>
         </view>
       </view>
@@ -33,6 +33,7 @@
       <text class="trigger-icon">|||</text>
       <text class="trigger-text">评价要素</text>
     </view>
+    <view class="drawer-trigger__spacer"></view>
 
     <!-- 当前页评分信息 -->
     <!--
@@ -50,20 +51,22 @@
       <scroll-view class="content" scroll-y style="margin-bottom:210rpx;">
         <view wx:for="{{currentContents}}" wx:key="id" class="evaluation-item">
         <view class="item-header">
-          <text class="item-title">{{item.title}}</text>
+          <view class="item-title-wrapper">
+            <text class="item-title">{{item.title}}</text>
+            <icon type="info" size="32"
+                  class="info-icon"
+                  data-title="{{item.title}}"
+                  data-desc="{{item.description}}"
+                  bindtap="showDescription" />
+          </view>
           <text class="item-score" wx:if="{{item.score != null}}">
-            <block wx:if="{{showFinalScoreMode && item.finalScore != null}}">
-              权值：{{item.score}}（最终得分：{{item.finalScore}}）
+            <block wx:if="{{isReview}}">
+              权值：{{item.score >= 5000 ? '合格' : (item.score <= -5000 ? '不合格' : (item.score != null ? item.score : 0))}}（最终得分：{{item.finalScore >= 5000 ? '合格' : (item.finalScore <= -5000 ? '不合格' : (item.finalScore != null ? item.finalScore : 0))}}）
             </block>
             <block wx:else>
-              权值：{{item.score}}（当前得分：{{item.totalScore || 0}}）
+              权值：{{item.score >= 5000 ? '合格' : (item.score <= -5000 ? '不合格' : (item.score != null ? item.score : 0))}}（当前得分：{{item.totalScore >= 5000 ? '合格' : (item.totalScore <= -5000 ? '不合格' : (item.totalScore != null ? item.totalScore : 0))}}）
             </block>
           </text>
-          <icon type="info" size="32"
-                class="info-icon"
-                data-title="{{item.title}}"
-                data-desc="{{item.description}}"
-                bindtap="showDescription" />
         </view>
 
         <!-- 完成次数 - 仅当需要上传材料时显示 -->
@@ -76,13 +79,7 @@
                       bindtap="decreaseScore" 
                       data-id="{{item.id}}"
                       disabled="{{interactionLocked}}">-</button>
-              <input class="score-input" 
-                     type="number" 
-                     value="{{item.time}}"
-                     bindinput="onScoreInput" 
-                     data-id="{{item.id}}" 
-                     placeholder="0"
-                     disabled="{{interactionLocked}}"/>
+              <text class="score-input">{{item.time || 0}}</text>
               <button class="score-btn plus {{interactionLocked ? 'disabled' : ''}}" 
                       bindtap="increaseScore" 
                       data-id="{{item.id}}"
@@ -91,7 +88,7 @@
             <!-- 非count类型：固定为1，不可修改 -->
             <block wx:else>
               <button class="score-btn minus disabled" disabled>-</button>
-              <input class="score-input" type="number" value="1" disabled/>
+              <text class="score-input">1</text>
               <button class="score-btn plus disabled" disabled>+</button>
             </block>
           </view>

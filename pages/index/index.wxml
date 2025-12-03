@@ -13,7 +13,7 @@
     <view class="header">
       <view class="logo-wrapper">
         <view class="logo">
-          <image src="http://120.48.81.209/teacher_static/logo.png" mode=""></image>
+          <image src="https://r.xcx100.info/teacher_static/logo.png" mode=""></image>
         </view>
         <view class="logo-glow"></view>
       </view>
@@ -65,7 +65,7 @@
         <view class="input-line"></view>
         <!-- 显示/隐藏密码 -->
         <view class="eye-icon" bindtap="togglePasswordVisibility">
-          <image class="eye-icon-image" src="{{passwordVisible ? 'http://120.48.81.209/teacher_static/eye_close.png' : 'http://120.48.81.209/teacher_static/eye_open.png'}}" mode="aspectFit"></image>
+          <image class="eye-icon-image" src="{{passwordVisible ? 'https://r.xcx100.info/teacher_static/eye_close.png' : 'https://r.xcx100.info/teacher_static/eye_open.png'}}" mode="aspectFit"></image>
         </view>
       </view>
 

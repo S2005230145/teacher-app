@@ -134,73 +134,43 @@ class ApiService {
   uploadEvaluationFile({ filePath, description, contentId, userId }) {
     const url = `${this.baseURL}/front/tk/file/upload/add/`;
 
-    console.log(filePath,6666)
-
-    // 将 filePath 统一处理为数组，支持字符串（带逗号）、单个路径或数组
-    const normalizeFilePaths = (input) => {
-      if (!input) {
-        return [];
-      }
-      if (Array.isArray(input)) {
-        return input.map(path => (path || '').trim()).filter(Boolean);
-      }
-      if (typeof input === 'string') {
-        return input.split(',').map(path => path.trim()).filter(Boolean);
-      }
-      // 其他类型（如对象）统一转成字符串
-      return [String(input).trim()].filter(Boolean);
-    };
-
-    const filePaths = normalizeFilePaths(filePath);
-
-    console.log(filePaths)
-
-    if (!filePaths.length) {
+    // 确保 filePath 是单个文件路径字符串
+    if (!filePath || typeof filePath !== 'string' || !filePath.trim()) {
       return Promise.reject(new Error('没有有效的文件路径'));
     }
-''
-    const uploadSingleFile = (singleFilePath) => {
-      return new Promise((resolve, reject) => {
-        wx.uploadFile({
-          url,
-          filePath: singleFilePath,
-          name: 'file',
-          formData: {
-            description: description || '',
-            contentId,
-            userId
-          },
-          header: {
-            'Authorization': wx.getStorageSync('token') || ''
-          },
-          success: (res) => {
-            try {
-              console.log(res)
-              const data = JSON.parse(res.data);
-              resolve(data);
-            } catch (error) {
-              reject(error);
-            }
-          },
-          fail: (err) => {
-            reject(err);
+
+    const singleFilePath = filePath.trim();
+
+    console.log('上传单个文件:', singleFilePath);
+
+    return new Promise((resolve, reject) => {
+      wx.uploadFile({
+        url,
+        filePath: singleFilePath,
+        name: 'file',
+        formData: {
+          description: description || '',
+          contentId,
+          userId
+        },
+        header: {
+          'Authorization': wx.getStorageSync('token') || ''
+        },
+        success: (res) => {
+          try {
+            console.log('文件上传响应:', res);
+            const data = JSON.parse(res.data);
+            resolve(data);
+          } catch (error) {
+            console.error('解析上传响应失败:', error);
+            reject(error);
           }
-        });
+        },
+        fail: (err) => {
+          console.error('文件上传失败:', err);
+          reject(err);
+        }
       });
-    };
-
-    if (filePaths.length === 1) {
-      return uploadSingleFile(filePaths[0]);
-    }
-
-    // 多个文件并行上传
-    return Promise.all(filePaths.map(uploadSingleFile)).then(results => {
-      const failedResults = results.filter(r => r.code !== 200);
-      if (failedResults.length > 0) {
-        const errorMsg = failedResults[0].reason || '部分文件上传失败';
-        return Promise.reject(new Error(errorMsg));
-      }
-      return results[0] || { code: 200, message: '所有文件上传成功' };
     });
   }
   //statistics.js

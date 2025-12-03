@@ -22,17 +22,29 @@
 
   <!-- 考核项目列表 -->
   <view class="assessment-list" style="width: 100%;">
+    <view class="assessment-item ethics-item">
+      <view class="item-header">
+        <text class="item-name">师德师风（优、合格、不合格）</text>
+        <text class="item-score ethics-score {{assessmentData.ethicsStatus === '优' ? 'ethics-score--excellent' : (assessmentData.ethicsStatus === '不合格' ? 'ethics-score--poor' : 'ethics-score--good')}}">
+          {{assessmentData.ethicsStatus}}
+        </text>
+      </view>
+      <view class="item-desc">综合教师职业道德、服务意识与育人表现的年度评价。</view>
+    </view>
     <view class="section-title">考核项目</view>
     
     <view class="assessment-item" wx:for="{{assessmentList}}" wx:key="id">
       <view bindtap="navigateToEvaluation" data-id="{{item.id}}">
         <view class="item-header">
-          <text class="item-name">{{item.indicatorName}}</text>
-          <text wx:if="{{item.score<5000&&item.score>-5000}}" class="item-score {{item.score >= 90 ? 'excellent' : item.score >= 80 ? 'good' : 'average'}}">
-            {{item.score?item.score:0}}分
+          <text class="item-name">
+            {{item.indicatorName}}
+            <text wx:if="{{item.isExistLeaderGrade}}" class="lock-icon">🔒</text>
           </text>
-          <text wx:if="{{item.score>=5000||item.score<=-5000}}" class="item-score {{item.score >= 5000 ? 'excellent' : 'average'}}">
-            {{item.score>=5000?'合格':'不合格'}}
+          <text wx:if="{{item.displayScore<5000&&item.displayScore>-5000}}" class="item-score {{item.displayScore >= 90 ? 'excellent' : item.displayScore >= 80 ? 'good' : 'average'}}">
+            {{item.displayScore?item.displayScore:0}}分
+          </text>
+          <text wx:elif="{{item.displayScore>=5000||item.displayScore<=-5000}}" class="item-score {{item.displayScore >= 5000 ? 'excellent' : 'average'}}">
+            {{item.displayScore>=5000?'合格':'不合格'}}
           </text>
         </view>
         <view class="item-desc">{{item.description?item.description:""}}</view>

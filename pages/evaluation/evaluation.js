@@ -1,5 +1,6 @@
 // pages/evaluation/evaluation.js
 import apiService from '../../utils/api.js';
+//const REMOTE_FILE_BASE_URL = 'https://r.xcx100.info/';
 const REMOTE_FILE_BASE_URL = 'http://120.48.81.209/';
 
 function buildRemoteFileUrl(rawPath = '') {
@@ -315,7 +316,16 @@ Page({
           // 计算初始当前得分：权值 * 完成次数
           const baseScore = clone.score;
           const count = clone.time;
-          clone.totalScore = multiplyScore(baseScore, count);
+          let totalScore = multiplyScore(baseScore, count);
+
+          // 业务规则：如果该项需要上传材料但当前没有任何文件，则当前得分视为 0 分
+          //（无论是否选择了等级或有默认次数）
+          const needFile = clone.isNeedUploadFile === true;
+          const hasFiles = Array.isArray(clone.files) && clone.files.length > 0;
+          if (needFile && !hasFiles) {
+            totalScore = 0;
+          }
+          clone.totalScore = totalScore;
 
           return clone;
         });
@@ -1259,7 +1269,7 @@ Page({
           this.updateFileStatus(fileItem.itemId, fileItem.fileIndex, { status: 'uploading', error: '' });
         });
 
-        // 按 contentId 分组上传
+        // 按 contentId 分组，但每个文件单独上传，避免覆盖
         const filesByContentId = {};
         filesToUpload.forEach(fileItem => {
           const contentId = fileItem.itemId;
@@ -1271,43 +1281,42 @@ Page({
 
         console.log('上传文件分组:', filesByContentId);
 
-        // 对每个 contentId 一次性上传所有文件
+        // 对每个 contentId 下的每个文件单独上传
         for (const contentId in filesByContentId) {
           const items = filesByContentId[contentId];
-          const filePaths = items.map(item => item.file.path).join(',');
-          const firstItem = items[0];
-          const description = firstItem.description || '';
+          const description = items[0].description || '';
 
-          console.log('上传文件路径:', filePaths);
-
-          try {
-            const res = await apiService.uploadEvaluationFile({
-              filePath: filePaths,
-              description: description,
-              contentId: contentId,
-              userId: userInfo.id
-            });
-            console.log(res,6456464)
-            if (res.code === 200) {
-              // 所有文件上传成功
-              items.forEach(item => {
+          // 逐个上传文件，避免覆盖
+          for (const item of items) {
+            try {
+              console.log('上传单个文件路径:', item.file.path);
+              
+              const res = await apiService.uploadEvaluationFile({
+                filePath: item.file.path,
+                description: description,
+                contentId: contentId,
+                userId: userInfo.id
+              });
+              
+              console.log('文件上传结果:', res);
+              
+              if (res.code === 200) {
+                // 单个文件上传成功
                 this.updateFileStatus(item.itemId, item.fileIndex, { status: 'uploaded' });
-              });
-            } else {
-              const reason = res.reason || '上传失败，请重试';
-              // 所有文件标记为失败
-              items.forEach(item => {
+              } else {
+                const reason = res.reason || '上传失败，请重试';
+                // 单个文件标记为失败
                 this.updateFileStatus(item.itemId, item.fileIndex, { status: 'failed', error: reason });
-              });
-              throw new Error(reason);
-            }
-          } catch (error) {
-            const message = error?.message || '上传失败，请重试';
-            // 所有文件标记为失败
-            items.forEach(item => {
+                // 继续上传其他文件，不中断
+                console.warn(`文件上传失败: ${item.file.path}`, reason);
+              }
+            } catch (error) {
+              const message = error?.message || '上传失败，请重试';
+              // 单个文件标记为失败
               this.updateFileStatus(item.itemId, item.fileIndex, { status: 'failed', error: message });
-            });
-            throw error;
+              // 继续上传其他文件，不中断
+              console.error(`文件上传出错: ${item.file.path}`, error);
+            }
           }
         }
       }

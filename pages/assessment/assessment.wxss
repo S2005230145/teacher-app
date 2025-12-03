@@ -103,6 +103,30 @@
   margin-top: 40rpx;
 }
 
+.ethics-item {
+  margin-bottom: 30rpx;
+}
+
+.ethics-score {
+  min-width: 100rpx;
+  text-align: center;
+}
+
+.ethics-score--excellent {
+  background: #e8fef8;
+  color: #00BFA5;
+}
+
+.ethics-score--good {
+  background: #e3f2fd;
+  color: #2196F3;
+}
+
+.ethics-score--poor {
+  background: #ffe8e6;
+  color: #E53935;
+}
+
 .section-title {
   font-size: 36rpx;
   font-weight: bold;
@@ -131,11 +155,22 @@
   color: #333;
 }
 
+.lock-icon {
+  font-size: 26rpx;
+  color: #FF9800;
+  margin-left: 8rpx;
+}
+
 .item-score {
   font-size: 28rpx;
   font-weight: bold;
   padding: 8rpx 16rpx;
   border-radius: 10rpx;
+  display: flex;          /* 让容器成为 flex */
+  align-items: center;    /* 垂直居中 */
+  justify-content: center;/* 水平居中 */
+  min-width: 120rpx;
+  text-align: center;
 }
 
 .item-score.excellent { background: #e8fef8; color: #00BFA5; } /* 冷青绿色 */
