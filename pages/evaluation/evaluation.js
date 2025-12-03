@@ -116,6 +116,8 @@ Page({
     allLeaderGraded: false,
     showWithdraw: false,
     interactionLocked: false,
+    showWaitingLeader: false,   // 所有 isLeaderGrade=true 时显示“等待上级确认”
+    showFinalScoreMode: false,  // 所有 isLeaderGrade=false 且 completed=true 时展示 finalScore
     levels: [
       { value: 'A', label: 'A (优秀)', score: 90 },
       { value: 'B', label: 'B (良好)', score: 80 },
@@ -319,18 +321,102 @@ Page({
         });
       });
       const formatTabs = Array.isArray(valueTest.tabs) ? valueTest.tabs : [];
-      // 是否有任意 tab 已提交或已被领导评分，用于锁定交互
-      const anyTabCompleted = formatTabs.length > 0
-        ? formatTabs.some(tab => tab && tab.completed === true)
+
+      // 统计 tab 状态
+      let anyTabCompleted = false;
+      let anyLeaderGraded = false;
+      if (formatTabs.length > 0) {
+        anyTabCompleted = formatTabs.some(tab => tab && tab.completed === true);
+        anyLeaderGraded = formatTabs.some(tab => tab && tab.isLeaderGrade === true);
+      }
+
+      const allLeaderTrue = formatTabs.length > 0
+        ? formatTabs.every(tab => tab && tab.isLeaderGrade === true)
         : false;
-      const anyLeaderGraded = formatTabs.length > 0
-        ? formatTabs.some(tab => tab && tab.isLeaderGrade === true)
+      const allLeaderFalse = formatTabs.length > 0
+        ? formatTabs.every(tab => tab && tab.isLeaderGrade === false)
         : false;
-      // 只要有一个 completed=1 或 isLeaderGrade=1 就锁定
-      const shouldLock = anyTabCompleted || anyLeaderGraded;
-      // 撤销审核按钮条件：只要有一个 isLeaderGrade=1，且所有 completed=0
-      const canWithdraw = anyLeaderGraded && !anyTabCompleted;
-      console.log('tabs 状态:', { anyTabCompleted, anyLeaderGraded, shouldLock, canWithdraw });
+      const allCompletedNull = formatTabs.length > 0
+        ? formatTabs.every(tab => tab && (tab.completed === null || tab.completed === undefined))
+        : false;
+      const allCompletedFalse = formatTabs.length > 0
+        ? formatTabs.every(tab => tab && tab.completed === false)
+        : false;
+      const allCompletedTrue = formatTabs.length > 0
+        ? formatTabs.every(tab => tab && tab.completed === true)
+        : false;
+
+      // 根据需求描述的 4 种组合，优先匹配精确场景
+      let isReview = false;
+      let interactionLocked = false;
+      let allLeaderGraded = false;
+      let showWithdraw = false;
+      let showWaitingLeader = false;
+      let showFinalScoreMode = false;
+
+      if (allLeaderTrue) {
+        // 1. 所有 isLeaderGrade=true，completed 无论何值：
+        //    按“等待上级确认”处理，整页只读
+        isReview = true;
+        interactionLocked = true;
+        allLeaderGraded = true;
+        showWaitingLeader = true;
+        showWithdraw = false;
+        showFinalScoreMode = false;
+      } else if (allLeaderFalse && allCompletedNull) {
+        // 2. 所有 isLeaderGrade=false，completed=null：
+        //    初始状态，可编辑，可“提交审核”
+        isReview = false;
+        interactionLocked = false;
+        allLeaderGraded = false;
+        showWaitingLeader = false;
+        showWithdraw = false;
+        showFinalScoreMode = false;
+      } else if (allLeaderFalse && allCompletedFalse) {
+        // 3. 所有 isLeaderGrade=false，completed=false：
+        //    已提交待审核，可“撤销审核”，但页面只读
+        isReview = true;
+        interactionLocked = true;
+        allLeaderGraded = false;
+        showWaitingLeader = false;
+        showWithdraw = true;
+        showFinalScoreMode = false;
+      } else if (allLeaderFalse && allCompletedTrue) {
+        // 4. 所有 isLeaderGrade=false，completed=true：
+        //    显示每个 content 下的 finalScore，页面只读
+        isReview = true;
+        interactionLocked = true;
+        allLeaderGraded = false;
+        showWaitingLeader = false;
+        showWithdraw = false;
+        showFinalScoreMode = true;
+      } else {
+        // 其他混合场景，维持原先的兼容逻辑
+        const shouldLock = anyTabCompleted || anyLeaderGraded;
+        const canWithdraw = anyLeaderGraded && !anyTabCompleted;
+        isReview = shouldLock;
+        interactionLocked = shouldLock;
+        allLeaderGraded = anyLeaderGraded;
+        showWithdraw = canWithdraw;
+        showWaitingLeader = false;
+        showFinalScoreMode = false;
+      }
+
+      console.log('tabs 状态:', {
+        anyTabCompleted,
+        anyLeaderGraded,
+        allLeaderTrue,
+        allLeaderFalse,
+        allCompletedNull,
+        allCompletedFalse,
+        allCompletedTrue,
+        isReview,
+        interactionLocked,
+        allLeaderGraded,
+        showWithdraw,
+        showWaitingLeader,
+        showFinalScoreMode
+      });
       const defaultTab = 0;
       const currentTab = normalizedContents[defaultTab] ? defaultTab : 0;
       const currentTabInfo = formatTabs[currentTab] || null;
@@ -361,9 +447,12 @@ Page({
         currentContents: normalizedContents[currentTab] || [],
         currentElement: currentTabInfo,
         currentLevel: restoredLevels,
-        isReview: shouldLock,
-        allLeaderGraded: anyLeaderGraded,
-        showWithdraw: canWithdraw
+        isReview,
+        allLeaderGraded,
+        showWithdraw,
+        showWaitingLeader,
+        showFinalScoreMode,
+        interactionLocked
       });
       this.refreshInteractionLock();
       // 初始化按钮状态
@@ -802,7 +891,7 @@ Page({
   },
 
   async doWithdrawAudit() {
-    const { tabs = [], userInfo = {} } = this.data;
+    const { userInfo = {}, indicatorId } = this.data;
     const userId = userInfo?.id;
     if (!userId) {
       wx.showToast({
@@ -811,12 +900,9 @@ Page({
       });
       return;
     }
-    const leaderGradedIds = (tabs || [])
-      .filter(tab => tab && tab.isLeaderGrade === true && tab.id != null)
-      .map(tab => tab.id);
-    if (!leaderGradedIds.length) {
+    if (!indicatorId) {
       wx.showToast({
-        title: '暂无可撤销的评价要素',
+        title: '指标信息缺失，无法撤销',
         icon: 'none'
       });
       return;
@@ -826,17 +912,15 @@ Page({
         title: '撤销中...',
         mask: true
       });
-      for (const elementId of leaderGradedIds) {
-        const res = await apiService.cancelAudit({
-          elementId,
-          userId
-        });
-        if (res.code !== 200) {
-          throw new Error(res.message || '撤销审核失败');
-        }
+      const res = await apiService.cancelAudit({
+        indicatorId,
+        userId
+      });
+      if (res.code !== 200) {
+        throw new Error(res.message || '撤销审核失败');
       }
       wx.showToast({
-        title: '撤销审核成功',
+        title: res.reason || '撤销审核成功',
         icon: 'success'
       });
       this.loadEvaluationList();
@@ -1075,6 +1159,7 @@ Page({
     }
 
     const path = file.path || '';
+    console.log(file.path,66)
     const name = file.name || '';
     const isImage = /\.(png|jpg|jpeg|bmp|gif|webp)$/i.test(name) || /\.(png|jpg|jpeg|bmp|gif|webp)$/i.test(path);
     if (isImage) {

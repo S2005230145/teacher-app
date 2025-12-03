@@ -52,7 +52,12 @@
         <view class="item-header">
           <text class="item-title">{{item.title}}</text>
           <text class="item-score" wx:if="{{item.score != null}}">
-            权值：{{item.score}}（当前得分：{{item.totalScore || 0}}）
+            <block wx:if="{{showFinalScoreMode && item.finalScore != null}}">
+              权值：{{item.score}}（最终得分：{{item.finalScore}}）
+            </block>
+            <block wx:else>
+              权值：{{item.score}}（当前得分：{{item.totalScore || 0}}）
+            </block>
           </text>
           <icon type="info" size="32"
                 class="info-icon"
@@ -158,8 +163,15 @@
 
     <!-- 底部按钮 -->
     <view class="footer">
-      <!-- 撤销审核按钮：有领导评分且所有 completed 为 0 -->
-      <button wx:if="{{showWithdraw}}"
+      <!-- 所有 isLeaderGrade=true：等待上级确认，不可操作 -->
+      <button wx:if="{{showWaitingLeader}}"
+              class="btn audit-btn disabled"
+              disabled="true">
+        等待上级确认
+      </button>
+
+      <!-- 撤销审核按钮 -->
+      <button wx:elif="{{showWithdraw}}"
               class="btn audit-btn"
               bindtap="withdrawAudit">
         撤销审核
