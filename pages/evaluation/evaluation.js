@@ -1,6 +1,6 @@
 // pages/evaluation/evaluation.js
 import apiService from '../../utils/api.js';
-const REMOTE_FILE_BASE_URL = 'http://120.48.81.209/';
+const REMOTE_FILE_BASE_URL = 'https://r.xcx100.info/';
 
 function buildRemoteFileUrl(rawPath = '') {
   if (!rawPath) {
@@ -315,7 +315,16 @@ Page({
           // 计算初始当前得分：权值 * 完成次数
           const baseScore = clone.score;
           const count = clone.time;
-          clone.totalScore = multiplyScore(baseScore, count);
+          let totalScore = multiplyScore(baseScore, count);
+
+          // 业务规则：如果该项需要上传材料但当前没有任何文件，则当前得分视为 0 分
+          //（无论是否选择了等级或有默认次数）
+          const needFile = clone.isNeedUploadFile === true;
+          const hasFiles = Array.isArray(clone.files) && clone.files.length > 0;
+          if (needFile && !hasFiles) {
+            totalScore = 0;
+          }
+          clone.totalScore = totalScore;
 
           return clone;
         });

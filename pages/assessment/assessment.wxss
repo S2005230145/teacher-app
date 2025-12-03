@@ -131,6 +131,12 @@
   color: #333;
 }
 
+.lock-icon {
+  font-size: 26rpx;
+  color: #FF9800;
+  margin-left: 8rpx;
+}
+
 .item-score {
   font-size: 28rpx;
   font-weight: bold;

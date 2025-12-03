@@ -18,7 +18,7 @@
               data-index="{{index}}">
           <text class="drawer-tab__text">{{item.name != null ? item.name : ''}}</text>
           <text class="drawer-tab__score" wx:if="{{item.robotScore != null}}">
-            {{item.robotScore}}
+            {{item.robotScore >= 5000 ? '合格' : (item.robotScore <= -5000 ? '不合格' : (item.robotScore != null ? item.robotScore : 0))}}
           </text>
         </view>
       </view>
@@ -52,11 +52,13 @@
         <view class="item-header">
           <text class="item-title">{{item.title}}</text>
           <text class="item-score" wx:if="{{item.score != null}}">
-            <block wx:if="{{showFinalScoreMode && item.finalScore != null}}">
-              权值：{{item.score}}（最终得分：{{item.finalScore}}）
+            <block wx:if="{{isReview}}">
+              权值：{{item.score >= 5000 ? '合格' : (item.score <= -5000 ? '不合格' : (item.score != null ? item.score : 0))}}
+              （最终得分：{{item.finalScore >= 5000 ? '合格' : (item.finalScore <= -5000 ? '不合格' : (item.finalScore != null ? item.finalScore : 0))}}）
             </block>
             <block wx:else>
-              权值：{{item.score}}（当前得分：{{item.totalScore || 0}}）
+              权值：{{item.score >= 5000 ? '合格' : (item.score <= -5000 ? '不合格' : (item.score != null ? item.score : 0))}}
+              （当前得分：{{item.totalScore >= 5000 ? '合格' : (item.totalScore <= -5000 ? '不合格' : (item.totalScore != null ? item.totalScore : 0))}}）
             </block>
           </text>
           <icon type="info" size="32"

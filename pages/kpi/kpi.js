@@ -119,6 +119,7 @@ Page({
         "userId":this.data.userInfo.id
       });
       mockData=value.mockData;
+      console.log(mockData,555)
     }catch(e){
       console.error(e);
     }
