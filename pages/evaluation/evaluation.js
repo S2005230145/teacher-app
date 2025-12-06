@@ -1,7 +1,7 @@
 // pages/evaluation/evaluation.js
 import apiService from '../../utils/api.js';
-//const REMOTE_FILE_BASE_URL = 'https://r.xcx100.info/';
-const REMOTE_FILE_BASE_URL = 'http://120.48.81.209/';
+const REMOTE_FILE_BASE_URL = 'https://r.xcx100.info/';
+//const REMOTE_FILE_BASE_URL = 'http://120.48.81.209/';
 
 function buildRemoteFileUrl(rawPath = '') {
   if (!rawPath) {

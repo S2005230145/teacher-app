@@ -255,6 +255,16 @@ cancelAudit(data){
     });
   }
 
+  //获取所有kpi
+  getAllKPI(data) {
+    return this.request("/tk/kpi/list/noPage/", {
+      method: 'POST',
+      data: data
+    });
+  }
+
+
+
 }
 
 

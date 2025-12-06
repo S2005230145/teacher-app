@@ -59,12 +59,15 @@ Page({
         'kpiId':kpiId
       })
       const indicatorList = this.formatIndicatorList(value?.indicator || []);
-      const summaryData = this.normalizeSummary(summary);
+      //const summaryData = this.normalizeSummary(summary);
+      const summaryData = summary
       this.setData({
         summary: summaryData,
         list: indicatorList,
         assessmentData: summaryData,
-        assessmentList: indicatorList
+        assessmentList: indicatorList,
+        kpiScore: value.kpiScore, 
+        kpiFinalScore: value.kpiFinalScore
       });
       wx.hideLoading();
     }catch(e){
@@ -154,12 +157,12 @@ Page({
     });
   },
 
-  normalizeSummary(summary = {}) {
+/*   normalizeSummary(summary = {}) {
     return {
       ...summary,
       ethicsStatus: summary?.ethicsStatus || '合格'
     };
-  },
+  }, */
 
   // 菜单点击
   // onMenuTap(e) {

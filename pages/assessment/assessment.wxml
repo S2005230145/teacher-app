@@ -6,7 +6,8 @@
     <view class="overview-title">本月考核概览</view>
     <view class="stats-grid">
       <view class="stat-item">
-        <text class="stat-value">{{assessmentData.currentScore || 0}}</text>
+       <!--  <text class="stat-value">{{assessmentData.currentScore || 0}}</text> -->
+       <text class="stat-value">{{kpiFinalScore || 0}}</text>
         <text class="stat-label">审核后的最终评分</text>
       </view>
       <view class="stat-item">

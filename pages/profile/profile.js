@@ -20,6 +20,7 @@ Page({
 
   onLoad() {
     this.checkLoginStatus();
+    this.getAllKPI();
   },
 
   // 检查登录状态
@@ -45,6 +46,15 @@ Page({
       });
     }
   },
+
+ async getAllKPI() {
+  const kpiAllList=await apiService.getAllKPI({});
+  console.log(kpiAllList,666)
+  this.setData({
+    kpiList: kpiAllList.list || []
+  });
+ },
+
 
   // 登录
   onLogin() {
@@ -155,17 +165,26 @@ Page({
       return;
     }
 
-    // 写死的KPI列表
-    const kpiList = [
-      { id: 1, name: '课堂教学质量评估' },
-      { id: 2, name: '科研论文发表' },
-      { id: 3, name: '学生指导服务' },
-      { id: 4, name: '教学成果展示' },
-      { id: 5, name: '教研活动参与' }
-    ];
+    // 使用从API获取的KPI列表
+    let kpiList = this.data.kpiList || [];
+    
+    // 如果列表为空，尝试重新获取
+    if (kpiList.length === 0) {
+      await this.getAllKPI();
+      kpiList = this.data.kpiList || [];
+    }
 
-    // 构建选择列表（显示KPI名称）
-    const itemList = kpiList.map(item => item.name);
+    // 检查是否有KPI数据
+    if (kpiList.length === 0) {
+      wx.showToast({
+        title: '暂无KPI数据',
+        icon: 'none'
+      });
+      return;
+    }
+
+    // 构建选择列表（显示KPI标题）
+    const itemList = kpiList.map(item => item.title || '');
 
     // 显示选择弹窗
     wx.showActionSheet({
