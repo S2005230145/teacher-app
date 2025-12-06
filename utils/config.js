@@ -2,13 +2,13 @@
 const config = {
   // 开发环境
   development: {
-    baseURL: 'http://120.48.81.209/v1',
+    baseURL: 'https://r.xcx100.info/v1',
     apiVersion: 'v1'
   },
   
   // 测试环境
   testing: {
-    baseURL: 'http://120.48.81.209/v1',
+    baseURL: 'https://r.xcx100.info/v1',
     apiVersion: 'v1'
   },
 };
