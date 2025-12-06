@@ -24,9 +24,9 @@
   <view class="assessment-list" style="width: 100%;">
     <view class="assessment-item ethics-item">
       <view class="item-header">
-        <text class="item-name">师德师风（优、合格、不合格）</text>
-        <text class="item-score ethics-score {{assessmentData.ethicsStatus === '优' ? 'ethics-score--excellent' : (assessmentData.ethicsStatus === '不合格' ? 'ethics-score--poor' : 'ethics-score--good')}}">
-          {{assessmentData.ethicsStatus}}
+        <text class="item-name">师德师风优、合格、不合格</text>
+        <text class="item-score ethics-score {{standardName === '优' ? 'ethics-score--excellent' : (standardName === '不合格' ? 'ethics-score--poor' : 'ethics-score--good')}}">
+          {{standardName || '待定'}}
         </text>
       </view>
       <view class="item-desc">综合教师职业道德、服务意识与育人表现的年度评价。</view>

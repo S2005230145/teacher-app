@@ -247,6 +247,14 @@ cancelAudit(data){
     });
   }
 
+  // 获取教师标准
+  getTeacherStandard(data) {
+    return this.request("/tk/standard/teacher/get/", {
+      method: 'POST',
+      data: data
+    });
+  }
+
 }
 
 

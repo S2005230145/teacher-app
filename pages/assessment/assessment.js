@@ -4,12 +4,14 @@ Page({
   data: {
     userInfo: {},
     assessmentData: {},
-    assessmentList: []
+    assessmentList: [],
+    standardName: '待定' // 标准名（优、良、合格），默认待定
   },
 
   onLoad(options) {
     this.loadUserInfo();
     this.getAssessmentList(options.id);
+    this.getTeacherStandard(options.id);
   },
   async navigateToEvaluation(e) {
     const elementId = e.currentTarget.dataset.id;
@@ -190,6 +192,28 @@ Page({
         }
       }
     });
+  },
+
+  // 获取教师标准
+  async getTeacherStandard(kpiId) {
+    try {
+      const res = await apiService.getTeacherStandard({
+        userId: this.data.userInfo.id || '',
+        kpiId: kpiId || ''
+      });
+      console.log(res,666)
+      if (res.code === 200 && res.standards) {
+        this.setData({
+          standardName: res.standards
+        });
+      }
+    } catch (error) {
+      console.error('获取教师标准失败:', error);
+      // 失败时使用默认值
+      this.setData({
+        standardName: '待定'
+      });
+    }
   },
 
   // 下拉刷新
